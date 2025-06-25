@@ -93,17 +93,8 @@
 
                                 <div>
                                     <p class="text-sm text-gray-500">Tanggal Kadaluarsa</p>
-                                    @if ($strawberi->tanggal_kadaluarsa->isPast())
-                                        <p class="text-lg font-semibold text-red-600">
-                                            {{ $strawberi->tanggal_kadaluarsa->format('d M Y') }} (Kadaluarsa)</p>
-                                    @elseif($strawberi->tanggal_kadaluarsa->diffInDays(now()) <= 7)
-                                        <p class="text-lg font-semibold text-yellow-600">
-                                            {{ $strawberi->tanggal_kadaluarsa->format('d M Y') }}
-                                            ({{ $strawberi->tanggal_kadaluarsa->diffInDays(now()) }} hari lagi)</p>
-                                    @else
-                                        <p class="text-lg font-semibold text-green-600">
-                                            {{ $strawberi->tanggal_kadaluarsa->format('d M Y') }}</p>
-                                    @endif
+                                    <p class="text-lg font-semibold text-red-600">
+                                        {{ $strawberi->tanggal_kadaluarsa->format('d M Y') }} (Kadaluarsa)</p>
                                 </div>
 
                                 <div class="col-span-2">

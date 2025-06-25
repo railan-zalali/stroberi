@@ -244,23 +244,11 @@
                                                 {{ $strawberi->tanggal_masuk->format('d/m/Y') }}</div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            @if ($strawberi->tanggal_kadaluarsa->isPast())
-                                                <span
-                                                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                                    Kadaluarsa ({{ $strawberi->tanggal_kadaluarsa->format('d/m/Y') }})
-                                                </span>
-                                            @elseif($strawberi->tanggal_kadaluarsa->diffInDays(now()) <= 7)
-                                                <span
-                                                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                                    {{ $strawberi->tanggal_kadaluarsa->diffInDays(now()) }} hari lagi
-                                                    ({{ $strawberi->tanggal_kadaluarsa->format('d/m/Y') }})
-                                                </span>
-                                            @else
-                                                <span
-                                                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                                    {{ $strawberi->tanggal_kadaluarsa->format('d/m/Y') }}
-                                                </span>
-                                            @endif
+                                            <span
+                                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                                ({{ $strawberi->tanggal_kadaluarsa->format('d/m/Y') }})
+                                            </span>
+
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <div class="flex space-x-2">

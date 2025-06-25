@@ -98,4 +98,92 @@
         }
 
         .badge {
-            display:
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .badge-income {
+            background-color: #D1FAE5;
+            color: #065F46;
+        }
+
+        .badge-expense {
+            background-color: #FEE2E2;
+            color: #991B1B;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>LAPORAN KEUANGAN</h1>
+        <p>Periode: {{ $bulan }} {{ $tahun }}</p>
+    </div>
+
+    <div class="summary">
+        <div class="summary-title">Ringkasan Keuangan</div>
+        <div class="summary-grid">
+            <div class="summary-item">
+                <div class="summary-label">Total Pemasukan</div>
+                <div class="summary-value value-income">Rp {{ number_format($totalPemasukan, 0, ',', '.') }}</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">Total Pengeluaran</div>
+                <div class="summary-value value-expense">Rp {{ number_format($totalPengeluaran, 0, ',', '.') }}</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">Laba Bersih</div>
+                <div class="summary-value value-profit">Rp {{ number_format($laba, 0, ',', '.') }}</div>
+            </div>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Tanggal</th>
+                <th>Jenis</th>
+                <th>Kategori</th>
+                <th>Jumlah</th>
+                <th>Keterangan</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach ($transaksis as $transaksi)
+                <tr>
+                    <td>{{ $transaksi->tanggal->format('d/m/Y') }}</td>
+                    <td>
+                        <span class="badge {{ $transaksi->jenis == 'pemasukan' ? 'badge-income' : 'badge-expense' }}">
+                            {{ ucfirst($transaksi->jenis) }}
+                        </span>
+                    </td>
+                    <td>{{ $transaksi->kategori ?? '-' }}</td>
+                    <td class="text-right">Rp {{ number_format($transaksi->jumlah, 0, ',', '.') }}</td>
+                    <td>{{ $transaksi->keterangan ?? '-' }}</td>
+                </tr>
+            @endforeach
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <p>Dicetak pada: {{ now()->format('d F Y H:i') }}</p>
+        <p>Laporan ini dibuat otomatis oleh sistem. Semua data bersifat rahasia dan hanya untuk keperluan internal.</p>
+    </div>
+</body>
+
+</html>

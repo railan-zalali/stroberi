@@ -10,10 +10,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
-use Barryvdh\DomPDF\Facade\Pdf;
 use App\Exports\LaporanKeuanganExport;
 use App\Exports\LaporanStokExport;
 use App\Exports\LaporanSupplierExport;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -66,7 +66,15 @@ class LaporanController extends Controller
             ->orderBy('tanggal', 'asc')
             ->get();
 
-        $pdf = PDF::loadView('laporan.pdf', compact('bulan', 'tahun', 'transaksis', 'totalPemasukan', 'totalPengeluaran', 'laba'));
+        $pdf = Pdf::loadView('laporan.pdf', compact('bulan', 'tahun', 'transaksis', 'totalPemasukan', 'totalPengeluaran', 'laba'));
+        // $pdf = Pdf::loadView('laporan.pdf', [
+        //     'bulan' => $bulan,
+        //     'tahun' => $tahun,
+        //     'transaksis' => $transaksis,
+        //     'totalPemasukan' => $totalPemasukan,
+        //     'totalPengeluaran' => $totalPengeluaran,
+        //     'laba' => $laba,
+        // ]);
 
         $fileName = "laporan_keuangan_{$bulan}_{$tahun}.pdf";
         $filePath = "reports/{$fileName}";
@@ -149,7 +157,8 @@ class LaporanController extends Controller
     public function downloadPdf(Laporan $laporan)
     {
         if ($laporan->file_path) {
-            return Storage::disk('public')->download($laporan->file_path);
+            $file = Storage::disk('public')->path($laporan->file_path);
+            return response()->download($file);
         }
 
         return back()->with('error', 'File tidak ditemukan');
