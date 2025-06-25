@@ -3,13 +3,36 @@
 namespace App\Http\Controllers;
 
 use App\Models\Supplier;
+use App\Models\Strawberi;
+use App\Models\Transaksi;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
 
 class SupplierController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $suppliers = Supplier::paginate(10);
+        $search = $request->input('search');
+        $status = $request->input('status');
+
+        $query = Supplier::query();
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nama', 'like', "%{$search}%")
+                    ->orWhere('alamat', 'like', "%{$search}%")
+                    ->orWhere('telepon', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        if ($status) {
+            $query->where('status', $status);
+        }
+
+        $suppliers = $query->orderBy('nama')->paginate(10)->withQueryString();
+
         return view('supplier.index', compact('suppliers'));
     }
 
@@ -28,19 +51,18 @@ class SupplierController extends Controller
             'total_pinjaman' => 'nullable|numeric|min:0',
             'total_pembayaran' => 'nullable|numeric|min:0',
             'keterangan' => 'nullable|string',
+            'status' => 'required|in:aktif,tidak aktif',
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        $supplier = new Supplier([
-            'nama' => $request->nama,
-            'alamat' => $request->alamat,
-            'telepon' => $request->telepon,
-            'email' => $request->email,
-            'total_pinjaman' => $request->total_pinjaman ?? 0,
-            'total_pembayaran' => $request->total_pembayaran ?? 0,
-            'keterangan' => $request->keterangan,
-        ]);
+        $data = $request->except('foto');
 
-        $supplier->save();
+        if ($request->hasFile('foto')) {
+            $path = $request->file('foto')->store('suppliers', 'public');
+            $data['foto'] = $path;
+        }
+
+        $supplier = Supplier::create($data);
 
         return redirect()->route('supplier.index')
             ->with('success', 'Supplier berhasil ditambahkan');
@@ -48,7 +70,35 @@ class SupplierController extends Controller
 
     public function show(Supplier $supplier)
     {
-        return view('supplier.show', compact('supplier'));
+        // Ambil data strawberi dari supplier ini
+        $strawberis = Strawberi::where('supplier_id', $supplier->id)
+            ->orderBy('tanggal_masuk', 'desc')
+            ->paginate(5);
+
+        // Hitung total kg strawberi yang telah dibeli dari supplier ini
+        $totalKg = Strawberi::where('supplier_id', $supplier->id)->sum('jumlah');
+
+        // Hitung total nilai strawberi yang telah dibeli
+        $totalNilai = Strawberi::where('supplier_id', $supplier->id)
+            ->selectRaw('SUM(jumlah * harga_beli) as total')
+            ->first()->total ?? 0;
+
+        // Ambil transaksi terkait supplier ini
+        $transaksis = Transaksi::where('keterangan', 'like', "%{$supplier->nama}%")
+            ->orderBy('tanggal', 'desc')
+            ->paginate(5);
+
+        // Hitung sisa pinjaman
+        $sisaPinjaman = $supplier->total_pinjaman - $supplier->total_pembayaran;
+
+        return view('supplier.show', compact(
+            'supplier',
+            'strawberis',
+            'totalKg',
+            'totalNilai',
+            'transaksis',
+            'sisaPinjaman'
+        ));
     }
 
     public function edit(Supplier $supplier)
@@ -66,26 +116,73 @@ class SupplierController extends Controller
             'total_pinjaman' => 'nullable|numeric|min:0',
             'total_pembayaran' => 'nullable|numeric|min:0',
             'keterangan' => 'nullable|string',
+            'status' => 'required|in:aktif,tidak aktif',
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        $supplier->update([
-            'nama' => $request->nama,
-            'alamat' => $request->alamat,
-            'telepon' => $request->telepon,
-            'email' => $request->email,
-            'total_pinjaman' => $request->total_pinjaman ?? $supplier->total_pinjaman,
-            'total_pembayaran' => $request->total_pembayaran ?? $supplier->total_pembayaran,
-            'keterangan' => $request->keterangan,
-        ]);
+        $data = $request->except('foto');
 
-        return redirect()->route('supplier.index')
+        if ($request->hasFile('foto')) {
+            // Hapus foto lama jika ada
+            if ($supplier->foto) {
+                Storage::disk('public')->delete($supplier->foto);
+            }
+
+            // Upload foto baru
+            $path = $request->file('foto')->store('suppliers', 'public');
+            $data['foto'] = $path;
+        }
+
+        $supplier->update($data);
+
+        return redirect()->route('supplier.show', $supplier)
             ->with('success', 'Supplier berhasil diperbarui');
     }
 
     public function destroy(Supplier $supplier)
     {
+        // Cek apakah supplier masih memiliki data strawberi
+        $hasStrawberi = Strawberi::where('supplier_id', $supplier->id)->exists();
+
+        if ($hasStrawberi) {
+            return redirect()->route('supplier.index')
+                ->with('error', 'Supplier tidak dapat dihapus karena masih memiliki data strawberi');
+        }
+
+        // Hapus foto jika ada
+        if ($supplier->foto) {
+            Storage::disk('public')->delete($supplier->foto);
+        }
+
         $supplier->delete();
+
         return redirect()->route('supplier.index')
             ->with('success', 'Supplier berhasil dihapus');
+    }
+
+    public function updatePembayaran(Request $request, Supplier $supplier)
+    {
+        $request->validate([
+            'jumlah_pembayaran' => 'required|numeric|min:0',
+            'tanggal_pembayaran' => 'required|date',
+            'keterangan_pembayaran' => 'nullable|string',
+        ]);
+
+        // Update total pembayaran supplier
+        $supplier->total_pembayaran += $request->jumlah_pembayaran;
+        $supplier->save();
+
+        // Buat transaksi pengeluaran untuk pembayaran supplier
+        Transaksi::create([
+            'jenis' => 'pengeluaran',
+            'jumlah' => $request->jumlah_pembayaran,
+            'tanggal' => $request->tanggal_pembayaran,
+            'kategori' => 'Pembayaran Supplier',
+            'keterangan' => "Pembayaran ke supplier {$supplier->nama}: {$request->keterangan_pembayaran}",
+            'user_id' => auth()->id(),
+        ]);
+
+        return redirect()->route('supplier.show', $supplier)
+            ->with('success', 'Pembayaran supplier berhasil dicatat');
     }
 }

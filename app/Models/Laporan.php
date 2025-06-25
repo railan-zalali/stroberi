@@ -5,27 +5,28 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Supplier extends Model
+class Laporan extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'nama',
-        'alamat',
-        'telepon',
-        'email',
-        'total_pinjaman',
-        'total_pembayaran',
-        'keterangan',
+        'bulan',
+        'tahun',
+        'total_pemasukan',
+        'total_pengeluaran',
+        'laba',
+        'file_path',
+        'user_id',
     ];
 
     protected $casts = [
-        'total_pinjaman' => 'decimal:2',
-        'total_pembayaran' => 'decimal:2',
+        'total_pemasukan' => 'decimal:2',
+        'total_pengeluaran' => 'decimal:2',
+        'laba' => 'decimal:2',
     ];
 
-    public function strawberis()
+    public function user()
     {
-        return $this->hasMany(Strawberi::class);
+        return $this->belongsTo(User::class);
     }
 }

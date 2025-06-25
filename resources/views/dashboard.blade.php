@@ -1,4 +1,3 @@
-<!-- resources/views/dashboard.blade.php -->
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
@@ -34,6 +33,7 @@
                         </div>
                     </div>
                 </div>
+
 
                 <!-- Stock Summary Card -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
@@ -194,10 +194,7 @@
                     <div class="p-6 border-b border-gray-200">
                         <h3 class="text-lg font-medium text-gray-900 mb-4">Grafik Keuangan Bulanan</h3>
                         <div class="h-64 bg-gray-50 rounded-lg p-4">
-                            <!-- Di sini Anda bisa menambahkan grafik/chart menggunakan library seperti Chart.js -->
-                            <div class="flex items-center justify-center h-full">
-                                <p class="text-gray-500">Grafik akan ditampilkan di sini</p>
-                            </div>
+                            <canvas id="monthlyChart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -256,8 +253,74 @@
                             <span class="text-sm font-medium text-gray-700">Buat Laporan</span>
                         </a>
                     </div>
+
+                    <div class="mt-4">
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">Ekspor Data Cepat</h3>
+                        <div class="flex flex-wrap gap-2">
+                            <a href="{{ route('transaksi.export.month', [date('Y'), date('m')]) }}"
+                                class="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-green-600"
+                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                Ekspor Bulan Ini
+                            </a>
+                            <a href="{{ route('transaksi.export.year', [date('Y')]) }}"
+                                class="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-blue-600"
+                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                Ekspor Tahun Ini
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+    @push('scripts')
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+
+        <script>
+            const ctx = document.getElementById('monthlyChart').getContext('2d');
+            const myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'],
+                    datasets: [{
+                            label: 'Pemasukan',
+                            data: [12000000, 19000000, 15000000, 14000000, 18000000, 21000000],
+                            backgroundColor: 'rgba(34, 197, 94, 0.5)',
+                            borderColor: 'rgba(34, 197, 94, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Pengeluaran',
+                            data: [7000000, 12000000, 11000000, 9000000, 10000000, 15000000],
+                            backgroundColor: 'rgba(239, 68, 68, 0.5)',
+                            borderColor: 'rgba(239, 68, 68, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return 'Rp ' + value.toLocaleString('id-ID');
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        </script>
+    @endpush
 </x-app-layout>

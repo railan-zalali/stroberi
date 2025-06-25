@@ -33,6 +33,40 @@
             </header>
         @endif
 
+<!-- Tambahkan di layout utama -->
+<div x-data="{ showToast: false, message: '', type: 'success' }" x-init="
+    @if(session('success'))
+        showToast = true;
+        message = '{{ session('success') }}';
+        type = 'success';
+        setTimeout(() => showToast = false, 3000);
+    @elseif(session('error'))
+        showToast = true;
+        message = '{{ session('error') }}';
+        type = 'error';
+        setTimeout(() => showToast = false, 3000);
+    @endif
+">
+    <div x-show="showToast" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 transform translate-y-2"
+         x-transition:enter-end="opacity-100 transform translate-y-0"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 transform translate-y-0"
+         x-transition:leave-end="opacity-0 transform translate-y-2"
+         class="fixed bottom-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg" 
+         :class="{ 'bg-green-500': type === 'success', 'bg-red-500': type === 'error' }">
+        <div class="flex items-center text-white">
+            <svg x-show="type === 'success'" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <svg x-show="type === 'error'" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            <span x-text="message"></span>
+        </div>
+    </div>
+</div>
         <!-- Page Content -->
         <main>
             @if (session('success'))
@@ -57,6 +91,7 @@
             {{ $slot }}
         </main>
     </div>
+    @stack('scripts')
 </body>
 
 </html>
