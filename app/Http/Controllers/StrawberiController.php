@@ -7,6 +7,7 @@ use App\Models\Supplier;
 use App\Models\Transaksi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class StrawberiController extends Controller
 {
@@ -41,16 +42,25 @@ class StrawberiController extends Controller
         // Hitung total stok
         $stokSegar = Strawberi::where('jenis', 'segar')
             ->where('tanggal_kadaluarsa', '>=', now())
-            ->sum('jumlah');
+            ->get()
+            ->sum(function ($strawberi) {
+                return $strawberi->stok_tersisa;
+            });
 
         $stokBeku = Strawberi::where('jenis', 'beku')
             ->where('tanggal_kadaluarsa', '>=', now())
-            ->sum('jumlah');
+            ->get()
+            ->sum(function ($strawberi) {
+                return $strawberi->stok_tersisa;
+            });
 
         // Hitung stok yang hampir kadaluarsa
         $kadaluarsa = Strawberi::where('tanggal_kadaluarsa', '>=', now())
             ->where('tanggal_kadaluarsa', '<=', now()->addDays(7))
-            ->sum('jumlah');
+            ->get()
+            ->sum(function ($strawberi) {
+                return $strawberi->stok_tersisa;
+            });
 
         // Ambil daftar supplier untuk filter
         $suppliers = Supplier::where('status', 'aktif')->orderBy('nama')->get();
@@ -83,33 +93,59 @@ class StrawberiController extends Controller
             'tanggal_kadaluarsa' => 'required|date|after:tanggal_masuk',
             'supplier_id' => 'required|exists:suppliers,id',
             'keterangan' => 'nullable|string',
+            'buat_transaksi' => 'boolean',
+            'tambah_pinjaman' => 'boolean',
         ]);
 
-        // Simpan data strawberi
-        $strawberi = Strawberi::create($request->all());
+        DB::beginTransaction();
+        try {
+            // Simpan data strawberi
+            $strawberi = Strawberi::create([
+                'jenis' => $request->jenis,
+                'jumlah' => $request->jumlah,
+                'stok_awal' => $request->jumlah,
+                'stok_terjual' => 0,
+                'harga_beli' => $request->harga_beli,
+                'harga_jual' => $request->harga_jual,
+                'tanggal_masuk' => $request->tanggal_masuk,
+                'tanggal_kadaluarsa' => $request->tanggal_kadaluarsa,
+                'supplier_id' => $request->supplier_id,
+                'keterangan' => $request->keterangan,
+            ]);
 
-        // Buat transaksi pengeluaran otomatis
-        $supplier = Supplier::find($request->supplier_id);
-        Transaksi::create([
-            'jenis' => 'pengeluaran',
-            'jumlah' => $request->harga_beli * $request->jumlah,
-            'tanggal' => $request->tanggal_masuk,
-            'kategori' => 'Pembelian Strawberi',
-            'keterangan' => "Pembelian {$request->jumlah} kg strawberi {$request->jenis} dari {$supplier->nama}",
-            'user_id' => Auth::id(),
-        ]);
+            $supplier = Supplier::find($request->supplier_id);
+            $totalHarga = $request->harga_beli * $request->jumlah;
 
-        // Update total pinjaman supplier jika diinginkan
-        if ($request->has('tambah_pinjaman') && $request->tambah_pinjaman) {
-            $supplier->total_pinjaman += ($request->harga_beli * $request->jumlah);
-            $supplier->save();
+            // Buat transaksi pengeluaran otomatis jika diminta
+            if ($request->has('buat_transaksi') && $request->buat_transaksi) {
+                Transaksi::create([
+                    'jenis' => 'pengeluaran',
+                    'jumlah' => $totalHarga,
+                    'tanggal' => $request->tanggal_masuk,
+                    'kategori' => 'Pembelian Strawberi',
+                    'keterangan' => "Pembelian {$request->jumlah} kg strawberi {$request->jenis} dari {$supplier->nama}",
+                    'user_id' => Auth::id(),
+                ]);
+            }
+
+            // Update total pinjaman supplier jika diminta
+            if ($request->has('tambah_pinjaman') && $request->tambah_pinjaman) {
+                $supplier->total_pinjaman += $totalHarga;
+                $supplier->save();
+            }
+
+            DB::commit();
+
+            return redirect()->route('strawberi.index')
+                ->with('success', 'Stok strawberi berhasil ditambahkan');
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
+                ->withInput();
         }
-
-        return redirect()->route('strawberi.index')
-            ->with('success', 'Stok strawberi dan transaksi pembelian berhasil ditambahkan');
     }
-
-
 
     public function show(Strawberi $strawberi)
     {
@@ -155,5 +191,56 @@ class StrawberiController extends Controller
         $strawberi->delete();
         return redirect()->route('strawberi.index')
             ->with('success', 'Stok strawberi berhasil dihapus');
+    }
+
+    public function sell(Request $request, Strawberi $strawberi)
+    {
+        $request->validate([
+            'jumlah_jual' => "required|numeric|min:0.01|max:{$strawberi->stok_tersisa}",
+            'harga_jual' => 'required|numeric|min:0',
+            'tanggal_jual' => 'required|date',
+            'keterangan' => 'nullable|string',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            // Update stok terjual
+            $strawberi->stok_terjual += $request->jumlah_jual;
+            $strawberi->save();
+
+            // Buat transaksi pemasukan
+            Transaksi::create([
+                'jenis' => 'pemasukan',
+                'jumlah' => $request->jumlah_jual * $request->harga_jual,
+                'tanggal' => $request->tanggal_jual,
+                'kategori' => 'Penjualan Strawberi',
+                'keterangan' => "Penjualan {$request->jumlah_jual} kg strawberi {$strawberi->jenis} - {$request->keterangan}",
+                'user_id' => Auth::id(),
+            ]);
+
+            DB::commit();
+
+            return redirect()->route('strawberi.show', $strawberi)
+                ->with('success', 'Penjualan strawberi berhasil dicatat');
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
+                ->withInput();
+        }
+    }
+
+    public function getStockMovements(Strawberi $strawberi)
+    {
+        $movements = $strawberi->stockMovements()
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($movement) {
+                $movement->created_at = $movement->created_at->format('d/m/Y H:i:s');
+                return $movement;
+            });
+
+        return response()->json($movements);
     }
 }

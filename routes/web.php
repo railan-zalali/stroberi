@@ -27,29 +27,32 @@ require __DIR__ . '/auth.php';
 Route::middleware(['auth'])->group(function () {
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Strawberi routes
+    Route::resource('strawberi', StrawberiController::class);
+    Route::post('/strawberi/{strawberi}/sell', [StrawberiController::class, 'sell'])->name('strawberi.sell');
+
+    // Supplier routes
+    Route::resource('supplier', SupplierController::class);
+    Route::post('/supplier/{supplier}/pembayaran', [SupplierController::class, 'updatePembayaran'])->name('supplier.pembayaran');
+
+    // Transaksi routes
+    Route::resource('transaksi', TransaksiController::class);
+
     // Export routes
-    Route::get('/transaksi/export', [TransaksiController::class, 'export'])->name('transaksi.export');
-    Route::get('/transaksi/export-csv', [TransaksiController::class, 'exportCsv'])->name('transaksi.export-csv');
-    Route::get('/transaksi/export-pdf', [TransaksiController::class, 'exportPdf'])->name('transaksi.export-pdf');
     Route::get('/transaksi/export/month/{year}/{month}', [TransaksiController::class, 'exportMonth'])->name('transaksi.export.month');
     Route::get('/transaksi/export/year/{year}', [TransaksiController::class, 'exportYear'])->name('transaksi.export.year');
+    Route::get('/transaksi/export', [TransaksiController::class, 'export'])->name('transaksi.export');
+    Route::get('/transaksi/export/csv', [TransaksiController::class, 'exportCsv'])->name('transaksi.export.csv');
+    Route::get('/transaksi/export/pdf', [TransaksiController::class, 'exportPdf'])->name('transaksi.export.pdf');
 
-    Route::post('/supplier/{supplier}/update-pembayaran', [SupplierController::class, 'updatePembayaran'])->name('supplier.update-pembayaran');
-
-
-    // Laporan Routes
+    // Laporan routes
     Route::get('/laporan/keuangan', [LaporanController::class, 'keuangan'])->name('laporan.keuangan');
     Route::get('/laporan/stok', [LaporanController::class, 'stok'])->name('laporan.stok');
     Route::get('/laporan/supplier', [LaporanController::class, 'supplier'])->name('laporan.supplier');
-
     Route::get('/laporan/{laporan}/download-pdf', [LaporanController::class, 'downloadPdf'])->name('laporan.download-pdf');
-
-    Route::get('/laporan/export-keuangan', [LaporanController::class, 'exportKeuangan'])->name('laporan.export-keuangan');
-    Route::get('/laporan/export-stok', [LaporanController::class, 'exportStok'])->name('laporan.export-stok');
-    Route::get('/laporan/export-supplier', [LaporanController::class, 'exportSupplier'])->name('laporan.export-supplier');
-    // Resource routes
-    Route::resource('transaksi', TransaksiController::class);
-    Route::resource('strawberi', StrawberiController::class);
-    Route::resource('supplier', SupplierController::class);
+    Route::get('/laporan/export/keuangan', [LaporanController::class, 'exportKeuangan'])->name('laporan.export.keuangan');
+    Route::get('/laporan/export/stok', [LaporanController::class, 'exportStok'])->name('laporan.export.stok');
+    Route::get('/laporan/export/supplier', [LaporanController::class, 'exportSupplier'])->name('laporan.export.supplier');
     Route::resource('laporan', LaporanController::class);
 });

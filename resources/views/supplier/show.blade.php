@@ -134,7 +134,7 @@
                         <!-- Form Tambah Pembayaran -->
                         <div class="mt-6 pt-6 border-t border-gray-200">
                             <h4 class="text-sm font-medium text-gray-700 mb-4">Tambah Pembayaran</h4>
-                            <form action="{{ route('supplier.update-pembayaran', $supplier) }}" method="POST">
+                            <form action="{{ route('supplier.pembayaran', $supplier) }}" method="POST">
                                 @csrf
                                 <div class="space-y-4">
                                     <div>

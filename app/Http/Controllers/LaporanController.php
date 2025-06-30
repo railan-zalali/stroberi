@@ -256,35 +256,44 @@ class LaporanController extends Controller
 
         $strawberis = $query->orderBy('tanggal_masuk', 'desc')->paginate(10);
 
-        // Get summary data
+        // Get summary data using raw SQL calculations
         $stokSegar = Strawberi::where('jenis', 'segar')
             ->where('tanggal_kadaluarsa', '>=', now())
-            ->sum('jumlah');
+            ->selectRaw('SUM(stok_awal - stok_terjual - COALESCE(stok_rusak, 0) + COALESCE(stok_adjustment, 0)) as total')
+            ->value('total') ?? 0;
 
         $stokBeku = Strawberi::where('jenis', 'beku')
             ->where('tanggal_kadaluarsa', '>=', now())
-            ->sum('jumlah');
+            ->selectRaw('SUM(stok_awal - stok_terjual - COALESCE(stok_rusak, 0) + COALESCE(stok_adjustment, 0)) as total')
+            ->value('total') ?? 0;
 
         $stokKadaluarsa = Strawberi::where('tanggal_kadaluarsa', '<', now())
-            ->sum('jumlah');
+            ->selectRaw('SUM(stok_awal - stok_terjual - COALESCE(stok_rusak, 0) + COALESCE(stok_adjustment, 0)) as total')
+            ->value('total') ?? 0;
 
         $stokHampirKadaluarsa = Strawberi::where('tanggal_kadaluarsa', '>=', now())
             ->where('tanggal_kadaluarsa', '<=', now()->addDays(7))
-            ->sum('jumlah');
+            ->selectRaw('SUM(stok_awal - stok_terjual - COALESCE(stok_rusak, 0) + COALESCE(stok_adjustment, 0)) as total')
+            ->value('total') ?? 0;
 
         // Get supplier data for filter
         $suppliers = Supplier::orderBy('nama')->get();
 
         // Get monthly stok data for chart
-        $monthlyStokData = Strawberi::selectRaw('YEAR(tanggal_masuk) as tahun, MONTH(tanggal_masuk) as bulan, jenis, SUM(jumlah) as total')
-            ->whereYear('tanggal_masuk', '>=', now()->subYear()->year)
-            ->groupBy('tahun', 'bulan', 'jenis')
-            ->orderBy('tahun')
-            ->orderBy('bulan')
-            ->get()
-            ->groupBy(function ($item) {
-                return Carbon::createFromDate($item->tahun, $item->bulan, 1)->format('Y-m');
-            });
+        $monthlyStokData = Strawberi::selectRaw('
+            YEAR(tanggal_masuk) as tahun, 
+            MONTH(tanggal_masuk) as bulan, 
+            jenis, 
+            SUM(stok_awal - stok_terjual - COALESCE(stok_rusak, 0) + COALESCE(stok_adjustment, 0)) as total
+        ')
+        ->whereYear('tanggal_masuk', '>=', now()->subYear()->year)
+        ->groupBy('tahun', 'bulan', 'jenis')
+        ->orderBy('tahun')
+        ->orderBy('bulan')
+        ->get()
+        ->groupBy(function ($item) {
+            return Carbon::createFromDate($item->tahun, $item->bulan, 1)->format('Y-m');
+        });
 
         // Format data for chart
         $stokChart = $this->formatStokData($monthlyStokData);
@@ -303,29 +312,54 @@ class LaporanController extends Controller
     public function supplier()
     {
         // Get all suppliers with their stats
-        $suppliers = Supplier::withCount(['strawberis as total_kg' => function ($query) {
-            $query->select(DB::raw('SUM(jumlah)'));
+        $allSuppliers = Supplier::with(['strawberis' => function ($query) {
+            $query->where('tanggal_kadaluarsa', '>=', now());
         }])
-            ->withCount(['strawberis as total_nilai' => function ($query) {
-                $query->select(DB::raw('SUM(jumlah * harga_beli)'));
-            }])
-            ->paginate(10);
+            ->get()
+            ->map(function ($supplier) {
+                $supplier->total_kg = $supplier->strawberis->sum('stok_tersisa');
+                $supplier->total_nilai = $supplier->strawberis->sum(function ($strawberi) {
+                    return $strawberi->stok_tersisa * $strawberi->harga_beli;
+                });
+                return $supplier;
+            });
+
+        // Paginate the suppliers
+        $currentPage = request()->get('page', 1);
+        $perPage = 10;
+        $suppliers = new \Illuminate\Pagination\LengthAwarePaginator(
+            $allSuppliers->forPage($currentPage, $perPage),
+            $allSuppliers->count(),
+            $perPage,
+            $currentPage,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
 
         // Get top suppliers by volume
-        $topSuppliersByVolume = Supplier::withCount(['strawberis as total_kg' => function ($query) {
-            $query->select(DB::raw('SUM(jumlah)'));
+        $topSuppliersByVolume = Supplier::with(['strawberis' => function ($query) {
+            $query->where('tanggal_kadaluarsa', '>=', now());
         }])
-            ->orderBy('total_kg', 'desc')
-            ->limit(5)
-            ->get();
+            ->get()
+            ->map(function ($supplier) {
+                $supplier->total_kg = $supplier->strawberis->sum('stok_tersisa');
+                return $supplier;
+            })
+            ->sortByDesc('total_kg')
+            ->take(5);
 
         // Get top suppliers by value
-        $topSuppliersByValue = Supplier::withCount(['strawberis as total_nilai' => function ($query) {
-            $query->select(DB::raw('SUM(jumlah * harga_beli)'));
+        $topSuppliersByValue = Supplier::with(['strawberis' => function ($query) {
+            $query->where('tanggal_kadaluarsa', '>=', now());
         }])
-            ->orderBy('total_nilai', 'desc')
-            ->limit(5)
-            ->get();
+            ->get()
+            ->map(function ($supplier) {
+                $supplier->total_nilai = $supplier->strawberis->sum(function ($strawberi) {
+                    return $strawberi->stok_tersisa * $strawberi->harga_beli;
+                });
+                return $supplier;
+            })
+            ->sortByDesc('total_nilai')
+            ->take(5);
 
         // Get suppliers with outstanding debt
         $suppliersWithDebt = Supplier::whereRaw('total_pinjaman > total_pembayaran')
@@ -418,6 +452,22 @@ class LaporanController extends Controller
     private function formatStokData($monthlyStokData)
     {
         $result = [];
+
+        // Get monthly stok data for chart
+        $monthlyStokData = Strawberi::selectRaw('
+            YEAR(tanggal_masuk) as tahun, 
+            MONTH(tanggal_masuk) as bulan, 
+            jenis, 
+            SUM(stok_awal - stok_terjual - COALESCE(stok_rusak, 0) + COALESCE(stok_adjustment, 0)) as total
+        ')
+        ->whereYear('tanggal_masuk', '>=', now()->subYear()->year)
+        ->groupBy('tahun', 'bulan', 'jenis')
+        ->orderBy('tahun')
+        ->orderBy('bulan')
+        ->get()
+        ->groupBy(function ($item) {
+            return Carbon::createFromDate($item->tahun, $item->bulan, 1)->format('Y-m');
+        });
 
         foreach ($monthlyStokData as $month => $data) {
             $segar = $data->where('jenis', 'segar')->sum('total');

@@ -5,7 +5,7 @@
                 {{ __('Laporan Keuangan') }}
             </h2>
             <div class="flex space-x-2">
-                <a href="{{ route('laporan.export-keuangan', ['bulan' => $bulan, 'tahun' => $tahun]) }}"
+                <a href="{{ route('laporan.export.keuangan', ['bulan' => $bulan, 'tahun' => $tahun]) }}"
                     class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 active:bg-green-800 focus:outline-none focus:border-green-800 focus:ring ring-green-300 disabled:opacity-25 transition ease-in-out duration-150">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">

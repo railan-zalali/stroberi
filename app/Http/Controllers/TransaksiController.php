@@ -74,11 +74,17 @@ class TransaksiController extends Controller
             'keterangan' => 'nullable|string',
         ]);
 
+        // Set kategori default jika kosong
+        $kategori = $request->kategori;
+        if (empty($kategori)) {
+            $kategori = $request->jenis == 'pemasukan' ? 'Penjualan' : 'Operasional';
+        }
+
         $transaksi = new Transaksi([
             'jenis' => $request->jenis,
             'jumlah' => $request->jumlah,
             'tanggal' => $request->tanggal,
-            'kategori' => $request->kategori,
+            'kategori' => $kategori,
             'keterangan' => $request->keterangan,
             'user_id' => Auth::id(),
         ]);
@@ -222,5 +228,38 @@ class TransaksiController extends Controller
         $fileName .= Carbon::parse($tanggalMulai)->format('d-m-Y') . '_sampai_' . Carbon::parse($tanggalAkhir)->format('d-m-Y') . '.pdf';
 
         return Excel::download(new TransaksiExport($tanggalMulai, $tanggalAkhir, $jenis, $kategori), $fileName, \Maatwebsite\Excel\Excel::DOMPDF);
+    }
+
+    /**
+     * Export transaksi for specific month.
+     *
+     * @param  int  $year
+     * @param  int  $month
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     */
+    public function exportMonth($year, $month)
+    {
+        $tanggalMulai = Carbon::create($year, $month, 1)->format('Y-m-d');
+        $tanggalAkhir = Carbon::create($year, $month, 1)->endOfMonth()->format('Y-m-d');
+
+        $fileName = "transaksi_{$year}_{$month}.xlsx";
+
+        return Excel::download(new TransaksiExport($tanggalMulai, $tanggalAkhir, null, null), $fileName);
+    }
+
+    /**
+     * Export transaksi for specific year.
+     *
+     * @param  int  $year
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     */
+    public function exportYear($year)
+    {
+        $tanggalMulai = Carbon::create($year, 1, 1)->format('Y-m-d');
+        $tanggalAkhir = Carbon::create($year, 12, 31)->format('Y-m-d');
+
+        $fileName = "transaksi_{$year}.xlsx";
+
+        return Excel::download(new TransaksiExport($tanggalMulai, $tanggalAkhir, null, null), $fileName);
     }
 }

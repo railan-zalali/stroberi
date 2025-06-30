@@ -8,6 +8,7 @@ use App\Models\Transaksi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class SupplierController extends Controller
 {
@@ -168,21 +169,46 @@ class SupplierController extends Controller
             'keterangan_pembayaran' => 'nullable|string',
         ]);
 
-        // Update total pembayaran supplier
-        $supplier->total_pembayaran += $request->jumlah_pembayaran;
+        // Validasi sisa pinjaman
+        $sisaPinjaman = $supplier->sisa_pinjaman;
+        if ($request->jumlah_pembayaran > $sisaPinjaman) {
+            return redirect()->back()
+                ->with('error', "Jumlah pembayaran melebihi sisa pinjaman (Rp " . number_format($sisaPinjaman, 0, ',', '.') . ")")
+                ->withInput();
+        }
+
+        DB::beginTransaction();
+        try {
+            // Update total pembayaran supplier
+            $supplier->total_pembayaran += $request->jumlah_pembayaran;
+            $supplier->save();
+
+            // Buat transaksi pengeluaran untuk pembayaran supplier
+            Transaksi::create([
+                'jenis' => 'pengeluaran',
+                'jumlah' => $request->jumlah_pembayaran,
+                'tanggal' => $request->tanggal_pembayaran,
+                'kategori' => 'Pembayaran Supplier',
+                'keterangan' => "Pembayaran ke supplier {$supplier->nama}: {$request->keterangan_pembayaran}",
+                'user_id' => auth()->id(),
+            ]);
+
+            DB::commit();
+
+            return redirect()->route('supplier.show', $supplier)
+                ->with('success', 'Pembayaran supplier berhasil dicatat');
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
+                ->withInput();
+        }
+    }
+
+    public function updatePinjamanOtomatis(Supplier $supplier, $jumlah)
+    {
+        $supplier->total_pinjaman += $jumlah;
         $supplier->save();
-
-        // Buat transaksi pengeluaran untuk pembayaran supplier
-        Transaksi::create([
-            'jenis' => 'pengeluaran',
-            'jumlah' => $request->jumlah_pembayaran,
-            'tanggal' => $request->tanggal_pembayaran,
-            'kategori' => 'Pembayaran Supplier',
-            'keterangan' => "Pembayaran ke supplier {$supplier->nama}: {$request->keterangan_pembayaran}",
-            'user_id' => auth()->id(),
-        ]);
-
-        return redirect()->route('supplier.show', $supplier)
-            ->with('success', 'Pembayaran supplier berhasil dicatat');
     }
 }

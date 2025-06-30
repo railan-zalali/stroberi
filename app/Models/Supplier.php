@@ -17,6 +17,8 @@ class Supplier extends Model
         'total_pinjaman',
         'total_pembayaran',
         'keterangan',
+        'status',
+        'foto',
     ];
 
     protected $casts = [
@@ -27,5 +29,15 @@ class Supplier extends Model
     public function strawberis()
     {
         return $this->hasMany(Strawberi::class);
+    }
+
+    public function getSisaPinjamanAttribute()
+    {
+        return $this->total_pinjaman - $this->total_pembayaran;
+    }
+
+    public function isAktif()
+    {
+        return $this->status === 'aktif';
     }
 }

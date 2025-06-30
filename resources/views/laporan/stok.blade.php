@@ -5,7 +5,7 @@
                 {{ __('Laporan Stok') }}
             </h2>
             <div class="flex space-x-2">
-                <a href="{{ route('laporan.export-stok', request()->all()) }}"
+                <a href="{{ route('laporan.export.stok', request()->all()) }}"
                     class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 active:bg-green-800 focus:outline-none focus:border-green-800 focus:ring ring-green-300 disabled:opacity-25 transition ease-in-out duration-150">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
@@ -210,6 +210,30 @@
                                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Kadaluarsa
                                     </th>
+                                    <th scope="col"
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Batch Number
+                                    </th>
+                                    <th scope="col"
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Stok Awal
+                                    </th>
+                                    <th scope="col"
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Terjual
+                                    </th>
+                                    <th scope="col"
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Rusak
+                                    </th>
+                                    <th scope="col"
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Penyesuaian
+                                    </th>
+                                    <th scope="col"
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Stok Tersisa
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
@@ -276,6 +300,27 @@
                                             </span>
 
                                         </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            {{ $strawberi->batch_number }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            {{ number_format($strawberi->stok_awal, 2) }} kg
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            {{ number_format($strawberi->stok_terjual, 2) }} kg
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            {{ number_format($strawberi->stok_rusak, 2) }} kg
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            {{ number_format($strawberi->stok_adjustment, 2) }} kg
+                                            @if($strawberi->adjustment_notes)
+                                                <span class="text-xs text-gray-500 block">{{ $strawberi->adjustment_notes }}</span>
+                                            @endif
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            {{ number_format($strawberi->stok_tersisa, 2) }} kg
+                                        </td>
                                     </tr>
                                 @empty
                                     <tr>
@@ -292,6 +337,53 @@
                     <!-- Pagination -->
                     <div class="mt-4">
                         {{ $strawberis->withQueryString()->links() }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stock Movement History Modal -->
+    <div x-data="{ open: false, selectedStrawberi: null }" @keydown.escape.window="open = false">
+        <!-- Modal Trigger Button (hidden, triggered by JS) -->
+        <button x-ref="modalTrigger" @click="open = true" class="hidden">Open Modal</button>
+
+        <!-- Modal -->
+        <div x-show="open" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
+            <div class="flex items-center justify-center min-h-screen px-4">
+                <!-- Backdrop -->
+                <div class="fixed inset-0 bg-black opacity-50"></div>
+
+                <!-- Modal Content -->
+                <div class="relative bg-white rounded-lg max-w-4xl w-full mx-auto shadow-lg">
+                    <div class="p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-medium text-gray-900">Riwayat Pergerakan Stok</h3>
+                            <button @click="open = false" class="text-gray-400 hover:text-gray-500">
+                                <span class="sr-only">Close</span>
+                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipe</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stok Sebelum</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stok Setelah</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Catatan</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200" id="stockMovementHistory">
+                                    <!-- Filled by AJAX -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -369,6 +461,32 @@
                     }
                 }
             });
+
+            function showStockMovements(strawberiId) {
+                fetch(`/api/strawberi/${strawberiId}/stock-movements`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const tbody = document.getElementById('stockMovementHistory');
+                        tbody.innerHTML = '';
+                        
+                        data.forEach(movement => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${movement.created_at}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${movement.type_text}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${movement.quantity} kg</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${movement.stock_before} kg</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${movement.stock_after} kg</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${movement.notes || '-'}</td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+                        
+                        // Open modal
+                        document.querySelector('[x-ref="modalTrigger"]').click();
+                    })
+                    .catch(error => console.error('Error:', error));
+            }
         </script>
     @endpush
 </x-app-layout>

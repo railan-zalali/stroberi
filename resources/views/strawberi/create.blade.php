@@ -160,6 +160,28 @@
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
                             </div>
+
+                            <!-- Opsi Transaksi -->
+                            <div class="md:col-span-2">
+                                <div class="space-y-4">
+                                    <div class="flex items-center">
+                                        <input id="buat_transaksi" name="buat_transaksi" type="checkbox" value="1" 
+                                            {{ old('buat_transaksi', true) ? 'checked' : '' }}
+                                            class="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded">
+                                        <label for="buat_transaksi" class="ml-2 block text-sm text-gray-700">
+                                            Buat transaksi pengeluaran otomatis
+                                        </label>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <input id="tambah_pinjaman" name="tambah_pinjaman" type="checkbox" value="1"
+                                            {{ old('tambah_pinjaman', true) ? 'checked' : '' }}
+                                            class="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded">
+                                        <label for="tambah_pinjaman" class="ml-2 block text-sm text-gray-700">
+                                            Tambahkan ke total pinjaman supplier
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="flex justify-end space-x-3">

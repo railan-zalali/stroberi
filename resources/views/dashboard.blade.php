@@ -98,8 +98,8 @@
                                             <div class="flex justify-between items-center">
                                                 <span>{{ number_format($strawberi->jumlah, 2) }} kg
                                                     {{ ucfirst($strawberi->jenis) }}</span>
-                                                <span class="text-red-600 font-medium">
-                                                    {{ $strawberi->tanggal_kadaluarsa->diffInDays(now()) }} hari lagi
+                                                <span class="font-medium {{ $strawberi->is_expired ? 'text-red-700' : 'text-red-600' }}">
+                                                    {{ $strawberi->days_remaining_text }}
                                                 </span>
                                             </div>
                                         </li>
@@ -286,21 +286,26 @@
         <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
 
         <script>
+            // Get data from PHP
+            const monthlyLabels = @json($monthLabels);
+            const monthlyPemasukan = @json($monthlyData['pemasukan']);
+            const monthlyPengeluaran = @json($monthlyData['pengeluaran']);
+
             const ctx = document.getElementById('monthlyChart').getContext('2d');
             const myChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'],
+                    labels: monthlyLabels,
                     datasets: [{
                             label: 'Pemasukan',
-                            data: [12000000, 19000000, 15000000, 14000000, 18000000, 21000000],
+                            data: monthlyPemasukan,
                             backgroundColor: 'rgba(34, 197, 94, 0.5)',
                             borderColor: 'rgba(34, 197, 94, 1)',
                             borderWidth: 1
                         },
                         {
                             label: 'Pengeluaran',
-                            data: [7000000, 12000000, 11000000, 9000000, 10000000, 15000000],
+                            data: monthlyPengeluaran,
                             backgroundColor: 'rgba(239, 68, 68, 0.5)',
                             borderColor: 'rgba(239, 68, 68, 1)',
                             borderWidth: 1

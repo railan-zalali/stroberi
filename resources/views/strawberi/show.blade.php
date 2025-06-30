@@ -193,6 +193,13 @@
 
                     <!-- Tombol Aksi -->
                     <div class="mt-8 flex justify-end space-x-3">
+                        <button type="button" onclick="document.getElementById('modal-jual').classList.remove('hidden')"
+                            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                            Jual
+                        </button>
                         <form action="{{ route('strawberi.destroy', $strawberi) }}" method="POST" class="inline"
                             onsubmit="return confirm('Apakah Anda yakin ingin menghapus data ini?');">
                             @csrf
@@ -207,6 +214,86 @@
                                 Hapus Data
                             </button>
                         </form>
+                    </div>
+
+                    <!-- Modal Jual Strawberi -->
+                    <div id="modal-jual" class="fixed z-50 inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center hidden">
+                        <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6 relative">
+                            <button type="button" onclick="document.getElementById('modal-jual').classList.add('hidden')" class="absolute top-2 right-2 text-gray-400 hover:text-gray-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                            <h3 class="text-lg font-medium text-gray-900 mb-4">Jual Strawberi</h3>
+                            <form method="POST" action="{{ route('strawberi.sell', $strawberi) }}" class="space-y-4">
+                                @csrf
+                                <div>
+                                    <label for="jumlah_jual" class="block text-sm font-medium text-gray-700">Jumlah Jual (kg)</label>
+                                    <input type="number" step="0.01" min="0.01" max="{{ $strawberi->stok_tersisa }}" name="jumlah_jual" id="jumlah_jual" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500" required>
+                                    <small class="text-gray-500">Stok tersisa: {{ number_format($strawberi->stok_tersisa, 2) }} kg</small>
+                                </div>
+                                <div>
+                                    <label for="harga_jual" class="block text-sm font-medium text-gray-700">Harga Jual per kg (Rp)</label>
+                                    <input type="number" step="1" min="0" name="harga_jual" id="harga_jual" value="{{ $strawberi->harga_jual }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500" required>
+                                </div>
+                                <div>
+                                    <label for="tanggal_jual" class="block text-sm font-medium text-gray-700">Tanggal Jual</label>
+                                    <input type="date" name="tanggal_jual" id="tanggal_jual" value="{{ date('Y-m-d') }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500" required>
+                                </div>
+                                <div>
+                                    <label for="keterangan" class="block text-sm font-medium text-gray-700">Keterangan</label>
+                                    <textarea name="keterangan" id="keterangan" rows="2" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"></textarea>
+                                </div>
+                                <div class="flex justify-end">
+                                    <button type="button" onclick="document.getElementById('modal-jual').classList.add('hidden')" class="mr-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-md">Batal</button>
+                                    <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">Jual</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Riwayat Penjualan -->
+                    <div class="mt-12 bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Riwayat Penjualan Strawberi Ini</h3>
+                        @php
+                            $riwayatPenjualan = \App\Models\Transaksi::where('jenis', 'pemasukan')
+                                ->where('kategori', 'Penjualan Strawberi')
+                                ->where('keterangan', 'like', "%{$strawberi->id}%")
+                                ->orderBy('tanggal', 'desc')
+                                ->get();
+                        @endphp
+                        @if($riwayatPenjualan->isEmpty())
+                            <p class="text-gray-500">Belum ada penjualan untuk stok ini.</p>
+                        @else
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah Jual (kg)</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga Jual</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Keterangan</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        @foreach($riwayatPenjualan as $jual)
+                                            @php
+                                                preg_match('/Penjualan ([\d,.]+) kg/', $jual->keterangan, $matches);
+                                                $jumlahJual = isset($matches[1]) ? floatval(str_replace(',', '.', $matches[1])) : '-';
+                                            @endphp
+                                            <tr>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ \Carbon\Carbon::parse($jual->tanggal)->format('d/m/Y') }}</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm">{{ $jumlahJual }}</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm">Rp {{ number_format($jual->jumlah / ($jumlahJual ?: 1), 0, ',', '.') }}</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">Rp {{ number_format($jual->jumlah, 0, ',', '.') }}</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $jual->keterangan }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
