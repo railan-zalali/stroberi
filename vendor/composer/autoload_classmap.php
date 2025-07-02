@@ -29,6 +29,7 @@ return array(
     'App\\Http\\Requests\\Auth\\LoginRequest' => $baseDir . '/app/Http/Requests/Auth/LoginRequest.php',
     'App\\Http\\Requests\\ProfileUpdateRequest' => $baseDir . '/app/Http/Requests/ProfileUpdateRequest.php',
     'App\\Models\\Laporan' => $baseDir . '/app/Models/Laporan.php',
+    'App\\Models\\StockMovement' => $baseDir . '/app/Models/StockMovement.php',
     'App\\Models\\Strawberi' => $baseDir . '/app/Models/Strawberi.php',
     'App\\Models\\Supplier' => $baseDir . '/app/Models/Supplier.php',
     'App\\Models\\Transaksi' => $baseDir . '/app/Models/Transaksi.php',
