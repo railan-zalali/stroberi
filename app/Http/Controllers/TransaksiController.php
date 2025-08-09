@@ -1,0 +1,323 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Exports\TransaksiExport;
+use App\Models\Strawberi;
+use App\Models\Transaksi;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
+use Maatwebsite\Excel\Facades\Excel;
+
+class TransaksiController extends Controller
+{
+    public function index(Request $request)
+    {
+        // Set default filter untuk bulan ini
+        $tanggalMulai = $request->tanggal_mulai ?? Carbon::now()->startOfMonth()->format('Y-m-d');
+        $tanggalAkhir = $request->tanggal_akhir ?? Carbon::now()->endOfMonth()->format('Y-m-d');
+
+        // Buat query dasar
+        $query = Transaksi::query();
+
+        // Filter berdasarkan tanggal
+        $query->whereBetween('tanggal', [$tanggalMulai, $tanggalAkhir]);
+
+        // Filter berdasarkan jenis
+        if ($request->filled('jenis')) {
+            $query->where('jenis', $request->jenis);
+        }
+
+        // Filter berdasarkan kategori
+        if ($request->filled('kategori')) {
+            $query->where('kategori', $request->kategori);
+        }
+
+        // Hitung total pemasukan dan pengeluaran
+        $totalPemasukan = (clone $query)->where('jenis', 'pemasukan')->sum('jumlah');
+        $totalPengeluaran = (clone $query)->where('jenis', 'pengeluaran')->sum('jumlah');
+
+        // Ambil data transaksi
+        $transaksis = $query->orderBy('tanggal', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->paginate(10)
+            ->withQueryString();
+
+        // Ambil kategori unik untuk filter
+        $kategoris = Transaksi::distinct()->pluck('kategori')
+            ->filter(function ($value) {
+                return !is_null($value);
+            })
+            ->toArray();
+
+        return view('transaksi.index', compact(
+            'transaksis',
+            'totalPemasukan',
+            'totalPengeluaran',
+            'kategoris'
+        ));
+    }
+
+    public function create(Request $request)
+    {
+        // Ambil supplier_id dari query parameter jika ada
+        $supplierId = $request->query('supplier_id');
+        $supplier = null;
+        
+        if ($supplierId) {
+            $supplier = \App\Models\Supplier::find($supplierId);
+        }
+        
+        // Ambil daftar supplier untuk dropdown
+        $suppliers = \App\Models\Supplier::where('status', 'aktif')
+            ->orderBy('nama')
+            ->get();
+            
+        return view('transaksi.create', compact('suppliers', 'supplier'));
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'jenis' => 'required|in:pemasukan,pengeluaran',
+            'jumlah' => 'required|numeric|min:0',
+            'tanggal' => 'required|date',
+            'kategori' => 'nullable|string',
+            'keterangan' => 'nullable|string',
+            'tipe_transaksi' => 'nullable|string',
+            'is_pinjaman' => 'nullable|boolean',
+            'supplier_id' => 'nullable|exists:suppliers,id',
+        ]);
+
+        // Set kategori default jika kosong
+        $kategori = $request->kategori;
+        if (empty($kategori)) {
+            $kategori = $request->jenis == 'pemasukan' ? 'Penjualan' : 'Operasional';
+        }
+        
+        // Jika tipe transaksi adalah pinjaman dan supplier_id tidak ada, tampilkan error
+        if (($request->is_pinjaman || $request->tipe_transaksi == 'pinjaman') && empty($request->supplier_id)) {
+            return redirect()->back()
+                ->with('error', 'Supplier harus dipilih untuk transaksi pinjaman')
+                ->withInput();
+        }
+
+        $transaksi = new Transaksi([
+            'jenis' => $request->jenis,
+            'jumlah' => $request->jumlah,
+            'tanggal' => $request->tanggal,
+            'kategori' => $kategori,
+            'keterangan' => $request->keterangan,
+            'tipe_transaksi' => $request->tipe_transaksi ?? 'lainnya',
+            'is_pinjaman' => $request->is_pinjaman ?? false,
+            'user_id' => Auth::id(),
+            'supplier_id' => $request->supplier_id,
+        ]);
+
+        $transaksi->save();
+
+        // Jika transaksi berhasil disimpan dan ada supplier_id, redirect ke halaman supplier
+        if ($request->supplier_id) {
+            return redirect()->route('supplier.show', $request->supplier_id)
+                ->with('success', 'Transaksi berhasil ditambahkan');
+        }
+
+        return redirect()->route('transaksi.index')
+            ->with('success', 'Transaksi berhasil ditambahkan');
+    }
+
+    public function show(Transaksi $transaksi)
+    {
+        // Ambil transaksi terkait (dengan kategori yang sama)
+        $transaksiTerkait = Transaksi::where('id', '!=', $transaksi->id)
+            ->where('kategori', $transaksi->kategori)
+            ->orderBy('tanggal', 'desc')
+            ->limit(5)
+            ->get();
+
+        return view('transaksi.show', compact('transaksi', 'transaksiTerkait'));
+    }
+
+    public function edit(Transaksi $transaksi)
+    {
+        // Ambil daftar supplier untuk dropdown
+        $suppliers = \App\Models\Supplier::where('status', 'aktif')
+            ->orderBy('nama')
+            ->get();
+            
+        return view('transaksi.edit', compact('transaksi', 'suppliers'));
+    }
+
+    public function update(Request $request, Transaksi $transaksi)
+    {
+        $request->validate([
+            'jenis' => 'required|in:pemasukan,pengeluaran',
+            'jumlah' => 'required|numeric|min:0',
+            'tanggal' => 'required|date',
+            'kategori' => 'nullable|string',
+            'keterangan' => 'nullable|string',
+            'tipe_transaksi' => 'nullable|string',
+            'is_pinjaman' => 'nullable|boolean',
+            'supplier_id' => 'nullable|exists:suppliers,id',
+        ]);
+        
+        // Jika tipe transaksi adalah pinjaman dan supplier_id tidak ada, tampilkan error
+        if (($request->is_pinjaman || $request->tipe_transaksi == 'pinjaman') && empty($request->supplier_id)) {
+            return redirect()->back()
+                ->with('error', 'Supplier harus dipilih untuk transaksi pinjaman')
+                ->withInput();
+        }
+
+        $transaksi->update([
+            'jenis' => $request->jenis,
+            'jumlah' => $request->jumlah,
+            'tanggal' => $request->tanggal,
+            'kategori' => $request->kategori,
+            'keterangan' => $request->keterangan,
+            'tipe_transaksi' => $request->tipe_transaksi,
+            'is_pinjaman' => $request->is_pinjaman,
+            'supplier_id' => $request->supplier_id,
+        ]);
+        
+        // Jika transaksi berhasil diperbarui dan ada supplier_id, redirect ke halaman supplier
+        if ($request->supplier_id) {
+            return redirect()->route('supplier.show', $request->supplier_id)
+                ->with('success', 'Transaksi berhasil diperbarui');
+        }
+
+        return redirect()->route('transaksi.show', $transaksi)
+            ->with('success', 'Transaksi berhasil diperbarui');
+    }
+
+    public function destroy(Transaksi $transaksi)
+    {
+        $transaksi->delete();
+        return redirect()->route('transaksi.index')
+            ->with('success', 'Transaksi berhasil dihapus');
+    }
+    public function createFromStrawberi($strawberiId)
+    {
+        $strawberi = Strawberi::findOrFail($strawberiId);
+
+        return view('transaksi.create', [
+            'prefilledJenis' => 'pengeluaran',
+            'prefilledJumlah' => $strawberi->harga_beli * $strawberi->jumlah,
+            'prefilledKategori' => 'Pembelian Strawberi',
+            'prefilledKeterangan' => "Pembelian {$strawberi->jumlah} kg strawberi {$strawberi->jenis} dari {$strawberi->supplier->nama}",
+            'prefilledTipeTransaksi' => 'pembelian',
+            'prefilledIsPinjaman' => false,
+            'strawberiId' => $strawberi->id
+        ]);
+    }
+    public function export(Request $request)
+    {
+        $tanggalMulai = $request->tanggal_mulai ?? Carbon::now()->startOfMonth()->format('Y-m-d');
+        $tanggalAkhir = $request->tanggal_akhir ?? Carbon::now()->endOfMonth()->format('Y-m-d');
+        $jenis = $request->jenis;
+        $kategori = $request->kategori;
+
+        $fileName = 'transaksi_';
+
+        if ($jenis) {
+            $fileName .= strtolower($jenis) . '_';
+        }
+
+        if ($kategori) {
+            $fileName .= strtolower(str_replace(' ', '_', $kategori)) . '_';
+        }
+
+        $fileName .= Carbon::parse($tanggalMulai)->format('d-m-Y') . '_sampai_' . Carbon::parse($tanggalAkhir)->format('d-m-Y') . '.xlsx';
+
+        return Excel::download(new TransaksiExport($tanggalMulai, $tanggalAkhir, $jenis, $kategori), $fileName);
+    }
+
+    /**
+     * Export transaksi to CSV.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     */
+    public function exportCsv(Request $request)
+    {
+        $tanggalMulai = $request->tanggal_mulai ?? Carbon::now()->startOfMonth()->format('Y-m-d');
+        $tanggalAkhir = $request->tanggal_akhir ?? Carbon::now()->endOfMonth()->format('Y-m-d');
+        $jenis = $request->jenis;
+        $kategori = $request->kategori;
+
+        $fileName = 'transaksi_';
+
+        if ($jenis) {
+            $fileName .= strtolower($jenis) . '_';
+        }
+
+        if ($kategori) {
+            $fileName .= strtolower(str_replace(' ', '_', $kategori)) . '_';
+        }
+
+        $fileName .= Carbon::parse($tanggalMulai)->format('d-m-Y') . '_sampai_' . Carbon::parse($tanggalAkhir)->format('d-m-Y') . '.csv';
+
+        return Excel::download(new TransaksiExport($tanggalMulai, $tanggalAkhir, $jenis, $kategori), $fileName, \Maatwebsite\Excel\Excel::CSV);
+    }
+
+    /**
+     * Export transaksi to PDF.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     */
+    public function exportPdf(Request $request)
+    {
+        $tanggalMulai = $request->tanggal_mulai ?? Carbon::now()->startOfMonth()->format('Y-m-d');
+        $tanggalAkhir = $request->tanggal_akhir ?? Carbon::now()->endOfMonth()->format('Y-m-d');
+        $jenis = $request->jenis;
+        $kategori = $request->kategori;
+
+        $fileName = 'transaksi_';
+
+        if ($jenis) {
+            $fileName .= strtolower($jenis) . '_';
+        }
+
+        if ($kategori) {
+            $fileName .= strtolower(str_replace(' ', '_', $kategori)) . '_';
+        }
+
+        $fileName .= Carbon::parse($tanggalMulai)->format('d-m-Y') . '_sampai_' . Carbon::parse($tanggalAkhir)->format('d-m-Y') . '.pdf';
+
+        return Excel::download(new TransaksiExport($tanggalMulai, $tanggalAkhir, $jenis, $kategori), $fileName, \Maatwebsite\Excel\Excel::DOMPDF);
+    }
+
+    /**
+     * Export transaksi for specific month.
+     *
+     * @param  int  $year
+     * @param  int  $month
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     */
+    public function exportMonth($year, $month)
+    {
+        $tanggalMulai = Carbon::create($year, $month, 1)->format('Y-m-d');
+        $tanggalAkhir = Carbon::create($year, $month, 1)->endOfMonth()->format('Y-m-d');
+
+        $fileName = "transaksi_{$year}_{$month}.xlsx";
+
+        return Excel::download(new TransaksiExport($tanggalMulai, $tanggalAkhir, null, null), $fileName);
+    }
+
+    /**
+     * Export transaksi for specific year.
+     *
+     * @param  int  $year
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     */
+    public function exportYear($year)
+    {
+        $tanggalMulai = Carbon::create($year, 1, 1)->format('Y-m-d');
+        $tanggalAkhir = Carbon::create($year, 12, 31)->format('Y-m-d');
+
+        $fileName = "transaksi_{$year}.xlsx";
+
+        return Excel::download(new TransaksiExport($tanggalMulai, $tanggalAkhir, null, null), $fileName);
+    }
+}
