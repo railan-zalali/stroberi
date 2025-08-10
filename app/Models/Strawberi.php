@@ -142,6 +142,34 @@ class Strawberi extends Model
             return 'Baik';
         }
     }
+    
+    /**
+     * Get remaining days until expiration
+     *
+     * @return int
+     */
+    public function getSisaHariKadaluarsaAttribute()
+    {
+        return now()->diffInDays($this->tanggal_kadaluarsa, false);
+    }
+    
+    /**
+     * Get formatted expiration text
+     *
+     * @return string
+     */
+    public function getTextKadaluarsaAttribute()
+    {
+        $sisaHari = $this->sisa_hari_kadaluarsa;
+        
+        if ($sisaHari < 0) {
+            return 'Kadaluarsa ' . abs($sisaHari) . ' hari yang lalu';
+        } elseif ($sisaHari == 0) {
+            return 'Kadaluarsa hari ini';
+        } else {
+            return $sisaHari . ' hari lagi';
+        }
+    }
 
     /**
      * Get formatted jenis and grade

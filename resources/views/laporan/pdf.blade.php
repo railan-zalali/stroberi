@@ -11,35 +11,47 @@
             margin: 0;
             padding: 20px;
             color: #333;
+            background-color: #f8f9fa;
         }
 
         .header {
             text-align: center;
             margin-bottom: 30px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .header h1 {
             margin: 0;
-            font-size: 24px;
+            font-size: 28px;
             color: #333;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .header p {
-            margin: 5px 0;
+            margin: 10px 0;
             font-size: 16px;
+            color: #666;
         }
 
         .summary {
             margin-bottom: 30px;
-            padding: 15px;
-            background-color: #f9f9f9;
-            border-radius: 5px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .summary-title {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: bold;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
+            color: #333;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
         }
 
         .summary-grid {
@@ -50,20 +62,35 @@
 
         .summary-item {
             width: 30%;
-            padding: 10px;
-            background-color: #fff;
-            border-radius: 5px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #ddd;
+        }
+
+        .summary-item:nth-child(1) {
+            border-left-color: #10B981;
+        }
+
+        .summary-item:nth-child(2) {
+            border-left-color: #EF4444;
+        }
+
+        .summary-item:nth-child(3) {
+            border-left-color: #3B82F6;
         }
 
         .summary-label {
             font-size: 14px;
             color: #666;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .summary-value {
-            font-size: 18px;
+            font-size: 22px;
             font-weight: bold;
         }
 
@@ -83,24 +110,35 @@
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 30px;
+            background-color: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         th,
         td {
-            padding: 10px;
+            padding: 12px 15px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
         }
 
         th {
-            background-color: #f2f2f2;
+            background-color: #4B5563;
+            color: white;
             font-weight: bold;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 0.5px;
         }
 
         .badge {
             display: inline-block;
-            padding: 3px 8px;
-            border-radius: 12px;
+            padding: 4px 10px;
+            border-radius: 20px;
             font-size: 12px;
             font-weight: bold;
             text-transform: uppercase;
@@ -125,6 +163,36 @@
             text-align: center;
             font-size: 12px;
             color: #666;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .expiry-notice {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #FEF2F2;
+            border-left: 4px solid #EF4444;
+            border-radius: 8px;
+            color: #991B1B;
+        }
+        
+        .chart-container {
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .chart-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
         }
     </style>
 </head>

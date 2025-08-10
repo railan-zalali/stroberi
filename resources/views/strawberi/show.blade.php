@@ -57,7 +57,7 @@
                                     </span>
                                     <span class="text-lg font-semibold text-gray-800">Strawberi Beku</span>
                                 @endif
-                                
+
                                 <!-- Grade Badge -->
                                 @php
                                     $gradeColors = [
@@ -67,7 +67,8 @@
                                     ];
                                     $gradeColor = $gradeColors[$strawberi->grade] ?? 'bg-gray-100 text-gray-600';
                                 @endphp
-                                <span class="ml-2 px-3 py-1 rounded-full {{ $gradeColor }} text-xs font-bold uppercase">
+                                <span
+                                    class="ml-2 px-3 py-1 rounded-full {{ $gradeColor }} text-xs font-bold uppercase">
                                     Grade {{ strtoupper($strawberi->grade) }}
                                 </span>
                             </div>
@@ -106,8 +107,17 @@
 
                                 <div>
                                     <p class="text-sm text-gray-500">Tanggal Kadaluarsa</p>
-                                    <p class="text-lg font-semibold text-red-600">
-                                        {{ $strawberi->tanggal_kadaluarsa->format('d M Y') }} (Kadaluarsa)</p>
+                                    <p
+                                        class="text-lg font-semibold {{ $strawberi->isKadaluarsa() ? 'text-red-600' : ($strawberi->isHampirKadaluarsa() ? 'text-yellow-600' : 'text-green-600') }}">
+                                        {{ $strawberi->tanggal_kadaluarsa->format('d M Y') }}
+                                        @if ($strawberi->isKadaluarsa())
+                                            (Kadaluarsa)
+                                        @elseif($strawberi->isHampirKadaluarsa())
+                                            ({{ $strawberi->tanggal_kadaluarsa->diffInDays(now()) }} hari lagi)
+                                        @else
+                                            {{ $strawberi->tanggal_kadaluarsa->diffInDays(now()) }} hari lagi
+                                        @endif
+                                    </p>
                                 </div>
 
                                 <div class="col-span-2">
@@ -196,20 +206,48 @@
                     <div class="mt-8 bg-white p-6 rounded-lg shadow-md">
                         <h3 class="text-lg font-medium text-gray-900 mb-4">Statistik Stok Strawberi</h3>
 
-                        <div class="h-64 bg-gray-50 rounded-lg p-4">
-                            <!-- Di sini Anda bisa menambahkan grafik/chart menggunakan library seperti Chart.js -->
-                            <div class="flex items-center justify-center h-full">
-                                <p class="text-gray-500">Grafik pergerakan stok akan ditampilkan di sini</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <!-- Grafik Stok -->
+                            <div class="h-64 bg-gray-50 rounded-lg p-4">
+                                <h4 class="text-md font-medium text-gray-700 mb-2">Pergerakan Stok</h4>
+                                <canvas id="stockChart"></canvas>
                             </div>
+
+                            <!-- Grafik Penjualan -->
+                            <div class="h-64 bg-gray-50 rounded-lg p-4">
+                                <h4 class="text-md font-medium text-gray-700 mb-2">Penjualan</h4>
+                                <canvas id="salesChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Informasi Kadaluarsa -->
+                        <div class="mt-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                            <h4 class="text-md font-medium text-yellow-700 mb-2">Informasi Kadaluarsa</h4>
+                            <p class="text-sm text-yellow-600">
+                                @if ($strawberi->isKadaluarsa())
+                                    Stok ini sudah kadaluarsa pada
+                                    {{ $strawberi->tanggal_kadaluarsa->format('d M Y') }}.
+                                @elseif($strawberi->isHampirKadaluarsa())
+                                    Stok ini akan kadaluarsa dalam
+                                    {{ $strawberi->tanggal_kadaluarsa->diffInDays(now()) }} hari lagi.
+                                    Segera jual atau gunakan stok ini untuk menghindari kerugian.
+                                @else
+                                    Stok ini masih baik dan akan kadaluarsa dalam
+                                    {{ $strawberi->tanggal_kadaluarsa->diffInDays(now()) }} hari lagi.
+                                @endif
+                            </p>
                         </div>
                     </div>
 
                     <!-- Tombol Aksi -->
                     <div class="mt-8 flex justify-end space-x-3">
-                        <button type="button" onclick="document.getElementById('modal-jual').classList.remove('hidden')"
+                        <button type="button"
+                            onclick="document.getElementById('modal-jual').classList.remove('hidden')"
                             class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                             </svg>
                             Jual
                         </button>
@@ -230,36 +268,60 @@
                     </div>
 
                     <!-- Modal Jual Strawberi -->
-                    <div id="modal-jual" class="fixed z-50 inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center hidden">
+                    <div id="modal-jual"
+                        class="fixed z-50 inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center hidden">
                         <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6 relative">
-                            <button type="button" onclick="document.getElementById('modal-jual').classList.add('hidden')" class="absolute top-2 right-2 text-gray-400 hover:text-gray-600">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            <button type="button"
+                                onclick="document.getElementById('modal-jual').classList.add('hidden')"
+                                class="absolute top-2 right-2 text-gray-400 hover:text-gray-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
+                                    viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                             </button>
                             <h3 class="text-lg font-medium text-gray-900 mb-4">Jual Strawberi</h3>
-                            <form method="POST" action="{{ route('strawberi.sell', $strawberi) }}" class="space-y-4">
+                            <form method="POST" action="{{ route('strawberi.sell', $strawberi) }}"
+                                class="space-y-4">
                                 @csrf
                                 <div>
-                                    <label for="jumlah_jual" class="block text-sm font-medium text-gray-700">Jumlah Jual (kg)</label>
-                                    <input type="number" step="0.01" min="0.01" max="{{ $strawberi->stok_tersisa }}" name="jumlah_jual" id="jumlah_jual" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500" required>
-                                    <small class="text-gray-500">Stok tersisa: {{ number_format($strawberi->stok_tersisa, 2) }} kg</small>
+                                    <label for="jumlah_jual" class="block text-sm font-medium text-gray-700">Jumlah
+                                        Jual (kg)</label>
+                                    <input type="number" step="0.01" min="0.01"
+                                        max="{{ $strawberi->stok_tersisa }}" name="jumlah_jual" id="jumlah_jual"
+                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
+                                        required>
+                                    <small class="text-gray-500">Stok tersisa:
+                                        {{ number_format($strawberi->stok_tersisa, 2) }} kg</small>
                                 </div>
                                 <div>
-                                    <label for="harga_jual" class="block text-sm font-medium text-gray-700">Harga Jual per kg (Rp)</label>
-                                    <input type="number" step="1" min="0" name="harga_jual" id="harga_jual" value="{{ $strawberi->harga_jual }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500" required>
+                                    <label for="harga_jual" class="block text-sm font-medium text-gray-700">Harga Jual
+                                        per kg (Rp)</label>
+                                    <input type="number" step="1" min="0" name="harga_jual"
+                                        id="harga_jual" value="{{ $strawberi->harga_jual }}"
+                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
+                                        required>
                                 </div>
                                 <div>
-                                    <label for="tanggal_jual" class="block text-sm font-medium text-gray-700">Tanggal Jual</label>
-                                    <input type="date" name="tanggal_jual" id="tanggal_jual" value="{{ date('Y-m-d') }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500" required>
+                                    <label for="tanggal_jual" class="block text-sm font-medium text-gray-700">Tanggal
+                                        Jual</label>
+                                    <input type="date" name="tanggal_jual" id="tanggal_jual"
+                                        value="{{ date('Y-m-d') }}"
+                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
+                                        required>
                                 </div>
                                 <div>
-                                    <label for="keterangan" class="block text-sm font-medium text-gray-700">Keterangan</label>
-                                    <textarea name="keterangan" id="keterangan" rows="2" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"></textarea>
+                                    <label for="keterangan"
+                                        class="block text-sm font-medium text-gray-700">Keterangan</label>
+                                    <textarea name="keterangan" id="keterangan" rows="2"
+                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"></textarea>
                                 </div>
                                 <div class="flex justify-end">
-                                    <button type="button" onclick="document.getElementById('modal-jual').classList.add('hidden')" class="mr-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-md">Batal</button>
-                                    <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">Jual</button>
+                                    <button type="button"
+                                        onclick="document.getElementById('modal-jual').classList.add('hidden')"
+                                        class="mr-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-md">Batal</button>
+                                    <button type="submit"
+                                        class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">Jual</button>
                                 </div>
                             </form>
                         </div>
@@ -275,32 +337,51 @@
                                 ->orderBy('tanggal', 'desc')
                                 ->get();
                         @endphp
-                        @if($riwayatPenjualan->isEmpty())
+                        @if ($riwayatPenjualan->isEmpty())
                             <p class="text-gray-500">Belum ada penjualan untuk stok ini.</p>
                         @else
                             <div class="overflow-x-auto">
                                 <table class="min-w-full divide-y divide-gray-200">
                                     <thead class="bg-gray-50">
                                         <tr>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah Jual (kg)</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga Jual</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Keterangan</th>
+                                            <th
+                                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Tanggal</th>
+                                            <th
+                                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Jumlah Jual (kg)</th>
+                                            <th
+                                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Harga Jual</th>
+                                            <th
+                                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Total</th>
+                                            <th
+                                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Keterangan</th>
                                         </tr>
                                     </thead>
                                     <tbody class="bg-white divide-y divide-gray-200">
-                                        @foreach($riwayatPenjualan as $jual)
+                                        @foreach ($riwayatPenjualan as $jual)
                                             @php
                                                 preg_match('/Penjualan ([\d,.]+) kg/', $jual->keterangan, $matches);
-                                                $jumlahJual = isset($matches[1]) ? floatval(str_replace(',', '.', $matches[1])) : '-';
+                                                $jumlahJual = isset($matches[1])
+                                                    ? floatval(str_replace(',', '.', $matches[1]))
+                                                    : '-';
                                             @endphp
                                             <tr>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ \Carbon\Carbon::parse($jual->tanggal)->format('d/m/Y') }}</td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm">{{ $jumlahJual }}</td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm">Rp {{ number_format($jual->jumlah / ($jumlahJual ?: 1), 0, ',', '.') }}</td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">Rp {{ number_format($jual->jumlah, 0, ',', '.') }}</td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $jual->keterangan }}</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {{ \Carbon\Carbon::parse($jual->tanggal)->format('d/m/Y') }}</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm">{{ $jumlahJual }}
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm">Rp
+                                                    {{ number_format($jual->jumlah / ($jumlahJual ?: 1), 0, ',', '.') }}
+                                                </td>
+                                                <td
+                                                    class="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
+                                                    Rp {{ number_format($jual->jumlah, 0, ',', '.') }}</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {{ $jual->keterangan }}</td>
                                             </tr>
                                         @endforeach
                                     </tbody>
@@ -312,4 +393,105 @@
             </div>
         </div>
     </div>
+    <!-- Script untuk Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Data untuk grafik stok
+            const stockCtx = document.getElementById('stockChart').getContext('2d');
+            const stockChart = new Chart(stockCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Stok Awal', 'Terjual', 'Rusak', 'Adjustment', 'Tersisa'],
+                    datasets: [{
+                        label: 'Jumlah (kg)',
+                        data: [
+                            {{ $strawberi->stok_awal }},
+                            {{ $strawberi->stok_terjual }},
+                            {{ $strawberi->stok_rusak }},
+                            {{ $strawberi->stok_adjustment }},
+                            {{ $strawberi->stok_tersisa }}
+                        ],
+                        backgroundColor: 'rgba(220, 38, 38, 0.2)',
+                        borderColor: 'rgba(220, 38, 38, 1)',
+                        borderWidth: 2,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Data untuk grafik penjualan
+            @php
+                $riwayatPenjualan = \App\Models\Transaksi::where('jenis', 'pemasukan')
+                    ->where('kategori', 'Penjualan Strawberi')
+                    ->where('keterangan', 'like', "%{$strawberi->id}%")
+                    ->orderBy('tanggal', 'asc')
+                    ->get();
+
+                $labels = [];
+                $data = [];
+
+                foreach ($riwayatPenjualan as $jual) {
+                    $labels[] = $jual->tanggal->format('d/m/Y');
+                    $data[] = $jual->jumlah;
+                }
+            @endphp
+
+            const salesCtx = document.getElementById('salesChart').getContext('2d');
+            const salesChart = new Chart(salesCtx, {
+                type: 'bar',
+                data: {
+                    labels: {!! json_encode($labels) !!},
+                    datasets: [{
+                        label: 'Penjualan (Rp)',
+                        data: {!! json_encode($data) !!},
+                        backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                        borderColor: 'rgba(16, 185, 129, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return 'Rp ' + value.toString().replace(/\B(?=(\d{3})+(?!\d))/g,
+                                        ".");
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += 'Rp ' + context.parsed.y.toString().replace(
+                                            /\B(?=(\d{3})+(?!\d))/g, ".");
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
 </x-app-layout>

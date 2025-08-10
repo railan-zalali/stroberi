@@ -111,17 +111,19 @@
                         <div class="mt-6 pt-6 border-t border-gray-200">
                             <div class="flex justify-between items-center mb-4">
                                 <h4 class="text-sm font-medium text-gray-700">Pengembalian Pinjaman</h4>
-                                @if($sisaPinjaman > 0)
-                                <span class="text-xs font-medium px-2.5 py-0.5 rounded-full bg-red-100 text-red-800">
-                                    Sisa Pinjaman: Rp {{ number_format($sisaPinjaman, 0, ',', '.') }}
-                                </span>
+                                @if ($sisaPinjaman > 0)
+                                    <span
+                                        class="text-xs font-medium px-2.5 py-0.5 rounded-full bg-red-100 text-red-800">
+                                        Sisa Pinjaman: Rp {{ number_format($sisaPinjaman, 0, ',', '.') }}
+                                    </span>
                                 @else
-                                <span class="text-xs font-medium px-2.5 py-0.5 rounded-full bg-green-100 text-green-800">
-                                    Tidak Ada Pinjaman
-                                </span>
+                                    <span
+                                        class="text-xs font-medium px-2.5 py-0.5 rounded-full bg-green-100 text-green-800">
+                                        Tidak Ada Pinjaman
+                                    </span>
                                 @endif
                             </div>
-                            
+
                             <form action="{{ route('supplier.pengembalian', $supplier) }}" method="POST">
                                 @csrf
                                 <div class="space-y-4">
@@ -138,41 +140,55 @@
                                                 required {{ $sisaPinjaman <= 0 ? 'disabled' : '' }}
                                                 class="focus:ring-green-500 focus:border-green-500 block w-full pl-12 sm:text-sm border-gray-300 rounded-md {{ $sisaPinjaman <= 0 ? 'bg-gray-100 cursor-not-allowed' : '' }}">
                                         </div>
-                                        @if($sisaPinjaman > 0)
-                                        <div class="mt-1 text-xs text-red-600">
-                                            <button type="button" onclick="document.getElementById('jumlah_pengembalian').value='{{ $sisaPinjaman }}'"
-                                                class="text-red-600 hover:text-red-800 underline flex items-center">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                                </svg>
-                                                Bayar Lunas (Rp {{ number_format($sisaPinjaman, 0, ',', '.') }})
-                                            </button>
-                                        </div>
+                                        @if ($sisaPinjaman > 0)
+                                            <div class="mt-1 text-xs text-red-600">
+                                                <button type="button"
+                                                    onclick="document.getElementById('jumlah_pengembalian').value='{{ $sisaPinjaman }}'"
+                                                    class="text-red-600 hover:text-red-800 underline flex items-center">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1"
+                                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2" d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                    Bayar Lunas (Rp {{ number_format($sisaPinjaman, 0, ',', '.') }})
+                                                </button>
+                                            </div>
                                         @endif
                                     </div>
 
                                     <!-- Metode Pengembalian -->
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Metode Pengembalian</label>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Metode
+                                            Pengembalian</label>
                                         <div class="grid grid-cols-2 gap-3">
                                             <div class="flex items-center">
-                                                <input id="metode-tunai" name="metode_pengembalian" type="radio" value="tunai"
-                                                    checked {{ $sisaPinjaman <= 0 ? 'disabled' : '' }}
+                                                <input id="metode-tunai" name="metode_pengembalian" type="radio"
+                                                    value="tunai" checked {{ $sisaPinjaman <= 0 ? 'disabled' : '' }}
                                                     class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 {{ $sisaPinjaman <= 0 ? 'opacity-50 cursor-not-allowed' : '' }}">
-                                                <label for="metode-tunai" class="ml-2 block text-sm text-gray-700 flex items-center {{ $sisaPinjaman <= 0 ? 'opacity-50 cursor-not-allowed' : '' }}">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                                                <label for="metode-tunai"
+                                                    class="ml-2 block text-sm text-gray-700 flex items-center {{ $sisaPinjaman <= 0 ? 'opacity-50 cursor-not-allowed' : '' }}">
+                                                    <svg xmlns="http://www.w3.org/2000/svg"
+                                                        class="h-5 w-5 mr-1 text-green-500" fill="none"
+                                                        viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                                                     </svg>
                                                     Tunai
                                                 </label>
                                             </div>
                                             <div class="flex items-center">
-                                                <input id="metode-transfer" name="metode_pengembalian" type="radio" value="transfer"
-                                                    {{ $sisaPinjaman <= 0 ? 'disabled' : '' }}
+                                                <input id="metode-transfer" name="metode_pengembalian" type="radio"
+                                                    value="transfer" {{ $sisaPinjaman <= 0 ? 'disabled' : '' }}
                                                     class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 {{ $sisaPinjaman <= 0 ? 'opacity-50 cursor-not-allowed' : '' }}">
-                                                <label for="metode-transfer" class="ml-2 block text-sm text-gray-700 flex items-center {{ $sisaPinjaman <= 0 ? 'opacity-50 cursor-not-allowed' : '' }}">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                                <label for="metode-transfer"
+                                                    class="ml-2 block text-sm text-gray-700 flex items-center {{ $sisaPinjaman <= 0 ? 'opacity-50 cursor-not-allowed' : '' }}">
+                                                    <svg xmlns="http://www.w3.org/2000/svg"
+                                                        class="h-5 w-5 mr-1 text-green-500" fill="none"
+                                                        viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                                                     </svg>
                                                     Transfer Bank
                                                 </label>
@@ -182,10 +198,12 @@
 
                                     <div>
                                         <label for="tanggal_pengembalian"
-                                            class="block text-sm font-medium text-gray-700">Tanggal Pengembalian</label>
+                                            class="block text-sm font-medium text-gray-700">Tanggal
+                                            Pengembalian</label>
                                         <div class="mt-1">
-                                            <input type="date" name="tanggal_pengembalian" id="tanggal_pengembalian"
-                                                value="{{ date('Y-m-d') }}" required {{ $sisaPinjaman <= 0 ? 'disabled' : '' }}
+                                            <input type="date" name="tanggal_pengembalian"
+                                                id="tanggal_pengembalian" value="{{ date('Y-m-d') }}" required
+                                                {{ $sisaPinjaman <= 0 ? 'disabled' : '' }}
                                                 class="shadow-sm focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border-gray-300 rounded-md {{ $sisaPinjaman <= 0 ? 'bg-gray-100 cursor-not-allowed' : '' }}">
                                         </div>
                                     </div>
@@ -202,42 +220,49 @@
                                         </div>
                                     </div>
 
-                                    @if($sisaPinjaman <= 0)
-                                    <div class="rounded-md bg-green-50 p-4">
-                                        <div class="flex">
-                                            <div class="flex-shrink-0">
-                                                <svg class="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                                                </svg>
-                                            </div>
-                                            <div class="ml-3">
-                                                <p class="text-sm font-medium text-green-800">
-                                                    Supplier ini tidak memiliki pinjaman yang perlu dikembalikan.
-                                                </p>
+                                    @if ($sisaPinjaman <= 0)
+                                        <div class="rounded-md bg-green-50 p-4">
+                                            <div class="flex">
+                                                <div class="flex-shrink-0">
+                                                    <svg class="h-5 w-5 text-green-400"
+                                                        xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                                                        fill="currentColor" aria-hidden="true">
+                                                        <path fill-rule="evenodd"
+                                                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                                            clip-rule="evenodd" />
+                                                    </svg>
+                                                </div>
+                                                <div class="ml-3">
+                                                    <p class="text-sm font-medium text-green-800">
+                                                        Supplier ini tidak memiliki pinjaman yang perlu dikembalikan.
+                                                    </p>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
                                     @else
-                                    <div>
-                                        <button type="submit"
-                                            class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                                            </svg>
-                                            Simpan Pengembalian
-                                        </button>
-                                    </div>
+                                        <div>
+                                            <button type="submit"
+                                                class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2"
+                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                                                </svg>
+                                                Simpan Pengembalian
+                                            </button>
+                                        </div>
                                     @endif
                                 </div>
                             </form>
                         </div>
-                        
+
                         <!-- Form Pinjaman Baru -->
                         <div class="mt-6 pt-6 border-t border-gray-200">
                             <div class="flex justify-between items-center mb-4">
                                 <h4 class="text-sm font-medium text-gray-700">Tambah Pinjaman Baru</h4>
                             </div>
-                            
+
                             <form action="{{ route('supplier.pinjaman', $supplier) }}" method="POST">
                                 @csrf
                                 <div class="space-y-4">
@@ -280,8 +305,10 @@
                                     <div>
                                         <button type="submit"
                                             class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2"
+                                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                                             </svg>
                                             Simpan Pinjaman
                                         </button>
@@ -469,8 +496,8 @@
                                                         @elseif($strawberi->tanggal_kadaluarsa->diffInDays(now()) <= 7)
                                                             <span
                                                                 class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                                                {{ $strawberi->tanggal_kadaluarsa->diffInDays(now()) }}
-                                                                hari lagi
+                                                                ({{ $strawberi->tanggal_kadaluarsa->format('d/m/Y') }})
+
                                                             </span>
                                                         @else
                                                             <span
@@ -574,13 +601,13 @@
                                                         {{ $transaksi->kategori ?? '-' }}
                                                     </td>
                                                     <td class="px-6 py-4">
-                                                        @if($transaksi->tipe_transaksi)
-                                                        <span
-                                                            class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $transaksi->is_pinjaman ? 'bg-red-100 text-red-800' : ($transaksi->tipe_transaksi == 'pengembalian' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800') }}">
-                                                            {{ ucfirst($transaksi->tipe_transaksi) }}
-                                                        </span>
+                                                        @if ($transaksi->tipe_transaksi)
+                                                            <span
+                                                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $transaksi->is_pinjaman ? 'bg-red-100 text-red-800' : ($transaksi->tipe_transaksi == 'pengembalian' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800') }}">
+                                                                {{ ucfirst($transaksi->tipe_transaksi) }}
+                                                            </span>
                                                         @else
-                                                        <span class="text-gray-400">-</span>
+                                                            <span class="text-gray-400">-</span>
                                                         @endif
                                                     </td>
                                                     <td

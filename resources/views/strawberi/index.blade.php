@@ -328,11 +328,24 @@
                                                 {{ $strawberi->tanggal_masuk->format('d/m/Y') }}</div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <span
-                                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                                ({{ $strawberi->tanggal_kadaluarsa->format('d/m/Y') }})
-                                            </span>
-
+                                            @php
+                                                $sisaHari = $strawberi->sisa_hari_kadaluarsa;
+                                                $badgeColor = 'bg-green-100 text-green-800';
+                                                
+                                                if ($sisaHari < 0) {
+                                                    $badgeColor = 'bg-red-100 text-red-800';
+                                                } elseif ($sisaHari <= 7) {
+                                                    $badgeColor = 'bg-yellow-100 text-yellow-800';
+                                                }
+                                            @endphp
+                                            <div class="flex flex-col space-y-1">
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $badgeColor }}">
+                                                    {{ $strawberi->text_kadaluarsa }}
+                                                </span>
+                                                <span class="text-xs text-gray-500">
+                                                    {{ $strawberi->tanggal_kadaluarsa->format('d/m/Y') }}
+                                                </span>
+                                            </div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <div class="flex space-x-2">
