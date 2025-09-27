@@ -72,11 +72,11 @@ class StrawberiController extends Controller
         // Ambil daftar supplier untuk filter
         $suppliers = Supplier::where('status', 'aktif')->orderBy('nama')->get();
 
-        // Hitung nilai stok
+        // Hitung nilai stok berdasarkan harga beli
         $nilaiStok = Strawberi::where('tanggal_kadaluarsa', '>=', now())
             ->get()
             ->sum(function ($strawberi) {
-                return $strawberi->stok_tersisa * $strawberi->harga_jual;
+                return $strawberi->stok_tersisa * $strawberi->harga_beli;
             });
             
         return view('strawberi.index', compact(
@@ -113,9 +113,7 @@ class StrawberiController extends Controller
             'grade' => 'required|in:a,b,c',
             'jumlah' => 'required|numeric|min:0',
             'harga_beli' => 'required|numeric|min:0',
-            'harga_jual' => 'required|numeric|min:0',
             'tanggal_masuk' => 'required|date',
-            'tanggal_kadaluarsa' => 'required|date|after:tanggal_masuk',
             'supplier_id' => 'required|exists:suppliers,id',
             'keterangan' => 'nullable|string',
             'buat_transaksi' => 'boolean',
@@ -133,9 +131,7 @@ class StrawberiController extends Controller
                 'stok_awal' => $request->jumlah,
                 'stok_terjual' => 0,
                 'harga_beli' => $request->harga_beli,
-                'harga_jual' => $request->harga_jual,
                 'tanggal_masuk' => $request->tanggal_masuk,
-                'tanggal_kadaluarsa' => $request->tanggal_kadaluarsa,
                 'supplier_id' => $request->supplier_id,
                 'keterangan' => $request->keterangan,
             ]);
@@ -157,6 +153,7 @@ class StrawberiController extends Controller
                     'keterangan' => "Pembelian kredit {$request->jumlah} kg strawberi {$request->jenis} grade {$request->grade} dari {$supplier->nama}",
                     'user_id' => Auth::id(),
                     'supplier_id' => $supplier->id,
+                    'supplier_name' => $supplier->nama,
                     'tipe_transaksi' => 'pinjaman',
                     'is_pinjaman' => true,
                 ]);
@@ -171,6 +168,7 @@ class StrawberiController extends Controller
                     'keterangan' => "Pembelian tunai {$request->jumlah} kg strawberi {$request->jenis} grade {$request->grade} dari {$supplier->nama}",
                     'user_id' => Auth::id(),
                     'supplier_id' => $supplier->id,
+                    'supplier_name' => $supplier->nama,
                     'tipe_transaksi' => 'pembelian',
                     'is_pinjaman' => false,
                 ]);
@@ -187,6 +185,7 @@ class StrawberiController extends Controller
                     'keterangan' => "Penambahan pinjaman untuk supplier {$supplier->nama} (Pembelian Strawberi Tunai)",
                     'user_id' => Auth::id(),
                     'supplier_id' => $supplier->id,
+                    'supplier_name' => $supplier->nama,
                     'tipe_transaksi' => 'pinjaman',
                     'is_pinjaman' => true,
                 ]);
@@ -223,7 +222,6 @@ class StrawberiController extends Controller
             'grade' => 'required|in:a,b,c',
             'jumlah' => 'required|numeric|min:0',
             'harga_beli' => 'required|numeric|min:0',
-            'harga_jual' => 'required|numeric|min:0',
             'tanggal_masuk' => 'required|date',
             'tanggal_kadaluarsa' => 'required|date|after:tanggal_masuk',
             'supplier_id' => 'required|exists:suppliers,id',
@@ -235,7 +233,6 @@ class StrawberiController extends Controller
             'grade' => $request->grade,
             'jumlah' => $request->jumlah,
             'harga_beli' => $request->harga_beli,
-            'harga_jual' => $request->harga_jual,
             'tanggal_masuk' => $request->tanggal_masuk,
             'tanggal_kadaluarsa' => $request->tanggal_kadaluarsa,
             'supplier_id' => $request->supplier_id,
@@ -258,12 +255,20 @@ class StrawberiController extends Controller
         $request->validate([
             'jumlah_jual' => "required|numeric|min:0.01|max:{$strawberi->stok_tersisa}",
             'harga_jual' => 'required|numeric|min:0',
+            'pembeli' => 'required|string|max:255',
+            'bukti_pembayaran' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
             'tanggal_jual' => 'required|date',
             'keterangan' => 'nullable|string',
         ]);
 
         DB::beginTransaction();
         try {
+            // Handle file upload
+            $buktiPembayaranPath = null;
+            if ($request->hasFile('bukti_pembayaran')) {
+                $buktiPembayaranPath = $request->file('bukti_pembayaran')->store('bukti_pembayaran', 'public');
+            }
+
             // Update stok terjual
             $strawberi->stok_terjual += $request->jumlah_jual;
             $strawberi->save();
@@ -274,9 +279,10 @@ class StrawberiController extends Controller
                 'jumlah' => $request->jumlah_jual * $request->harga_jual,
                 'tanggal' => $request->tanggal_jual,
                 'kategori' => 'Penjualan Strawberi',
-                'keterangan' => "Penjualan {$request->jumlah_jual} kg strawberi {$strawberi->jenis} - {$request->keterangan}",
+                'keterangan' => "Penjualan {$request->jumlah_jual} kg strawberi {$strawberi->jenis} grade {$strawberi->grade} kepada {$request->pembeli}" . ($request->keterangan ? " - {$request->keterangan}" : ""),
                 'user_id' => Auth::id(),
-                'supplier_id' => $strawberi->supplier_id,
+                'supplier_name' => $request->pembeli,
+                'bukti_pembayaran' => $buktiPembayaranPath,
                 'tipe_transaksi' => 'penjualan',
                 'is_pinjaman' => false,
             ]);

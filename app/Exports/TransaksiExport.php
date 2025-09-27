@@ -52,11 +52,14 @@ class TransaksiExport implements FromCollection, WithHeadings, WithMapping, Shou
             'Tanggal',
             'Jenis',
             'Kategori',
-            'Jumlah',
+            'Jumlah (Rp)',
+            'Supplier/Pembeli',
             'Keterangan',
+            'Bukti Pembayaran',
+            'Tipe Transaksi',
+            'Pinjaman',
             'Dibuat Oleh',
             'Dibuat Pada',
-            'Diperbarui Pada',
         ];
     }
 
@@ -67,11 +70,14 @@ class TransaksiExport implements FromCollection, WithHeadings, WithMapping, Shou
             $transaksi->tanggal->format('d/m/Y'),
             ucfirst($transaksi->jenis),
             $transaksi->kategori ?? '-',
-            $transaksi->jumlah,
+            'Rp ' . number_format($transaksi->jumlah, 0, ',', '.'),
+            $transaksi->supplier_name ?? ($transaksi->supplier->nama ?? '-'),
             $transaksi->keterangan ?? '-',
+            $transaksi->bukti_pembayaran ? 'Ada' : '-',
+            $transaksi->tipe_transaksi ?? '-',
+            $transaksi->is_pinjaman ? 'Ya' : 'Tidak',
             $transaksi->user->name ?? '-',
             $transaksi->created_at->format('d/m/Y H:i'),
-            $transaksi->updated_at->format('d/m/Y H:i'),
         ];
     }
 }

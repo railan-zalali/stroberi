@@ -237,10 +237,7 @@
                                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Harga Beli
                                     </th>
-                                    <th scope="col"
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Harga Jual
-                                    </th>
+
                                     <th scope="col"
                                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Supplier
@@ -316,10 +313,7 @@
                                             <div class="text-sm text-gray-900">Rp
                                                 {{ number_format($strawberi->harga_beli, 0, ',', '.') }}</div>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="text-sm text-gray-900">Rp
-                                                {{ number_format($strawberi->harga_jual, 0, ',', '.') }}</div>
-                                        </td>
+
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="text-sm text-gray-900">{{ $strawberi->supplier->nama }}</div>
                                         </td>

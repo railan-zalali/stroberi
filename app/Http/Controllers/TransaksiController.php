@@ -7,6 +7,7 @@ use App\Models\Strawberi;
 use App\Models\Transaksi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -61,20 +62,10 @@ class TransaksiController extends Controller
 
     public function create(Request $request)
     {
-        // Ambil supplier_id dari query parameter jika ada
-        $supplierId = $request->query('supplier_id');
-        $supplier = null;
+        // Ambil supplier_name dari query parameter jika ada
+        $supplierName = $request->query('supplier_name');
         
-        if ($supplierId) {
-            $supplier = \App\Models\Supplier::find($supplierId);
-        }
-        
-        // Ambil daftar supplier untuk dropdown
-        $suppliers = \App\Models\Supplier::where('status', 'aktif')
-            ->orderBy('nama')
-            ->get();
-            
-        return view('transaksi.create', compact('suppliers', 'supplier'));
+        return view('transaksi.create', compact('supplierName'));
     }
 
     public function store(Request $request)
@@ -87,7 +78,8 @@ class TransaksiController extends Controller
             'keterangan' => 'nullable|string',
             'tipe_transaksi' => 'nullable|string',
             'is_pinjaman' => 'nullable|boolean',
-            'supplier_id' => 'nullable|exists:suppliers,id',
+            'supplier_name' => 'nullable|string|max:255',
+            'bukti_pembayaran' => 'nullable|file|mimes:jpeg,jpg,png,pdf|max:2048',
         ]);
 
         // Set kategori default jika kosong
@@ -96,11 +88,17 @@ class TransaksiController extends Controller
             $kategori = $request->jenis == 'pemasukan' ? 'Penjualan' : 'Operasional';
         }
         
-        // Jika tipe transaksi adalah pinjaman dan supplier_id tidak ada, tampilkan error
-        if (($request->is_pinjaman || $request->tipe_transaksi == 'pinjaman') && empty($request->supplier_id)) {
+        // Jika tipe transaksi adalah pinjaman dan supplier_name tidak ada, tampilkan error
+        if (($request->is_pinjaman || $request->tipe_transaksi == 'pinjaman') && empty($request->supplier_name)) {
             return redirect()->back()
-                ->with('error', 'Supplier harus dipilih untuk transaksi pinjaman')
+                ->with('error', 'Nama supplier harus diisi untuk transaksi pinjaman')
                 ->withInput();
+        }
+
+        // Handle file upload for bukti_pembayaran
+        $buktiPembayaranPath = null;
+        if ($request->hasFile('bukti_pembayaran')) {
+            $buktiPembayaranPath = $request->file('bukti_pembayaran')->store('bukti_pembayaran', 'public');
         }
 
         $transaksi = new Transaksi([
@@ -112,16 +110,11 @@ class TransaksiController extends Controller
             'tipe_transaksi' => $request->tipe_transaksi ?? 'lainnya',
             'is_pinjaman' => $request->is_pinjaman ?? false,
             'user_id' => Auth::id(),
-            'supplier_id' => $request->supplier_id,
+            'supplier_name' => $request->supplier_name,
+            'bukti_pembayaran' => $buktiPembayaranPath,
         ]);
 
         $transaksi->save();
-
-        // Jika transaksi berhasil disimpan dan ada supplier_id, redirect ke halaman supplier
-        if ($request->supplier_id) {
-            return redirect()->route('supplier.show', $request->supplier_id)
-                ->with('success', 'Transaksi berhasil ditambahkan');
-        }
 
         return redirect()->route('transaksi.index')
             ->with('success', 'Transaksi berhasil ditambahkan');
@@ -141,12 +134,7 @@ class TransaksiController extends Controller
 
     public function edit(Transaksi $transaksi)
     {
-        // Ambil daftar supplier untuk dropdown
-        $suppliers = \App\Models\Supplier::where('status', 'aktif')
-            ->orderBy('nama')
-            ->get();
-            
-        return view('transaksi.edit', compact('transaksi', 'suppliers'));
+        return view('transaksi.edit', compact('transaksi'));
     }
 
     public function update(Request $request, Transaksi $transaksi)
@@ -159,14 +147,25 @@ class TransaksiController extends Controller
             'keterangan' => 'nullable|string',
             'tipe_transaksi' => 'nullable|string',
             'is_pinjaman' => 'nullable|boolean',
-            'supplier_id' => 'nullable|exists:suppliers,id',
+            'supplier_name' => 'nullable|string|max:255',
+            'bukti_pembayaran' => 'nullable|file|mimes:jpeg,jpg,png,pdf|max:2048',
         ]);
         
-        // Jika tipe transaksi adalah pinjaman dan supplier_id tidak ada, tampilkan error
-        if (($request->is_pinjaman || $request->tipe_transaksi == 'pinjaman') && empty($request->supplier_id)) {
+        // Jika tipe transaksi adalah pinjaman dan supplier_name tidak ada, tampilkan error
+        if (($request->is_pinjaman || $request->tipe_transaksi == 'pinjaman') && empty($request->supplier_name)) {
             return redirect()->back()
-                ->with('error', 'Supplier harus dipilih untuk transaksi pinjaman')
+                ->with('error', 'Nama supplier harus diisi untuk transaksi pinjaman')
                 ->withInput();
+        }
+
+        // Handle file upload for bukti_pembayaran
+        $buktiPembayaranPath = $transaksi->bukti_pembayaran; // Keep existing file if no new file uploaded
+        if ($request->hasFile('bukti_pembayaran')) {
+            // Delete old file if exists
+            if ($transaksi->bukti_pembayaran && \Storage::disk('public')->exists($transaksi->bukti_pembayaran)) {
+                \Storage::disk('public')->delete($transaksi->bukti_pembayaran);
+            }
+            $buktiPembayaranPath = $request->file('bukti_pembayaran')->store('bukti_pembayaran', 'public');
         }
 
         $transaksi->update([
@@ -177,14 +176,9 @@ class TransaksiController extends Controller
             'keterangan' => $request->keterangan,
             'tipe_transaksi' => $request->tipe_transaksi,
             'is_pinjaman' => $request->is_pinjaman,
-            'supplier_id' => $request->supplier_id,
+            'supplier_name' => $request->supplier_name,
+            'bukti_pembayaran' => $buktiPembayaranPath,
         ]);
-        
-        // Jika transaksi berhasil diperbarui dan ada supplier_id, redirect ke halaman supplier
-        if ($request->supplier_id) {
-            return redirect()->route('supplier.show', $request->supplier_id)
-                ->with('success', 'Transaksi berhasil diperbarui');
-        }
 
         return redirect()->route('transaksi.show', $transaksi)
             ->with('success', 'Transaksi berhasil diperbarui');
@@ -196,20 +190,7 @@ class TransaksiController extends Controller
         return redirect()->route('transaksi.index')
             ->with('success', 'Transaksi berhasil dihapus');
     }
-    public function createFromStrawberi($strawberiId)
-    {
-        $strawberi = Strawberi::findOrFail($strawberiId);
 
-        return view('transaksi.create', [
-            'prefilledJenis' => 'pengeluaran',
-            'prefilledJumlah' => $strawberi->harga_beli * $strawberi->jumlah,
-            'prefilledKategori' => 'Pembelian Strawberi',
-            'prefilledKeterangan' => "Pembelian {$strawberi->jumlah} kg strawberi {$strawberi->jenis} dari {$strawberi->supplier->nama}",
-            'prefilledTipeTransaksi' => 'pembelian',
-            'prefilledIsPinjaman' => false,
-            'strawberiId' => $strawberi->id
-        ]);
-    }
     public function export(Request $request)
     {
         $tanggalMulai = $request->tanggal_mulai ?? Carbon::now()->startOfMonth()->format('Y-m-d');

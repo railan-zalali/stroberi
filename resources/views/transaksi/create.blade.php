@@ -17,24 +17,17 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 border-b border-gray-200">
-                    <form method="POST" action="{{ route('transaksi.store') }}" class="space-y-6">
+                    <form method="POST" action="{{ route('transaksi.store') }}" class="space-y-6" enctype="multipart/form-data">
                         @csrf
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <!-- Supplier -->
+                            <!-- Supplier/Pembeli -->
                             <div>
-                                <label for="supplier_id" class="block text-sm font-medium text-gray-700">Supplier</label>
+                                <label for="supplier_name" class="block text-sm font-medium text-gray-700">Supplier/Pembeli</label>
                                 <div class="mt-1">
-                                    <select id="supplier_id" name="supplier_id" class="shadow-sm focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border-gray-300 rounded-md">
-                                        <option value="">Pilih Supplier</option>
-                                        @foreach($suppliers as $supplierItem)
-                                            <option value="{{ $supplierItem->id }}" {{ (old('supplier_id') == $supplierItem->id || (isset($supplier) && $supplier->id == $supplierItem->id)) ? 'selected' : '' }}>
-                                                {{ $supplierItem->nama }}
-                                            </option>
-                                        @endforeach
-                                    </select>
+                                    <input type="text" name="supplier_name" id="supplier_name" value="{{ old('supplier_name', $supplierName ?? '') }}" class="shadow-sm focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border-gray-300 rounded-md" placeholder="Masukkan nama supplier atau pembeli">
                                 </div>
-                                @error('supplier_id')
+                                @error('supplier_name')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
                             </div>
@@ -152,6 +145,18 @@
                                     </div>
                                 </div>
                                 @error('is_pinjaman')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Bukti Pembayaran -->
+                            <div class="md:col-span-2">
+                                <label for="bukti_pembayaran" class="block text-sm font-medium text-gray-700">Bukti Pembayaran (Opsional)</label>
+                                <div class="mt-1">
+                                    <input type="file" name="bukti_pembayaran" id="bukti_pembayaran" accept="image/*,.pdf" class="shadow-sm focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                                    <p class="mt-1 text-xs text-gray-500">Format yang didukung: JPG, PNG, PDF. Maksimal 2MB.</p>
+                                </div>
+                                @error('bukti_pembayaran')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
                             </div>

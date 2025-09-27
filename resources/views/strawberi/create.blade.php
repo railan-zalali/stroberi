@@ -118,22 +118,7 @@
                                 @enderror
                             </div>
 
-                            <!-- Harga Jual -->
-                            <div>
-                                <label for="harga_jual" class="block text-sm font-medium text-gray-700">Harga Jual
-                                    (Rp)</label>
-                                <div class="mt-1 relative rounded-md shadow-sm">
-                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <span class="text-gray-500 sm:text-sm">Rp</span>
-                                    </div>
-                                    <input type="number" name="harga_jual" id="harga_jual"
-                                        value="{{ old('harga_jual') }}"
-                                        class="focus:ring-red-500 focus:border-red-500 block w-full pl-12 sm:text-sm border-gray-300 rounded-md">
-                                </div>
-                                @error('harga_jual')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
+
 
                             <!-- Tanggal Masuk -->
                             <div>
@@ -149,18 +134,16 @@
                                 @enderror
                             </div>
 
-                            <!-- Tanggal Kadaluarsa -->
+                            <!-- Tanggal Kadaluarsa - Auto calculated based on jenis -->
                             <div>
-                                <label for="tanggal_kadaluarsa" class="block text-sm font-medium text-gray-700">Tanggal
-                                    Kadaluarsa</label>
-                                <div class="mt-1">
-                                    <input type="date" name="tanggal_kadaluarsa" id="tanggal_kadaluarsa"
-                                        value="{{ old('tanggal_kadaluarsa', date('Y-m-d', strtotime('+7 days'))) }}"
-                                        class="shadow-sm focus:ring-red-500 focus:border-red-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                                <label class="block text-sm font-medium text-gray-700">Tanggal Kadaluarsa</label>
+                                <div class="mt-1 p-3 bg-gray-50 border border-gray-200 rounded-md">
+                                    <p class="text-sm text-gray-600">
+                                        <span class="font-medium">Otomatis dihitung:</span><br>
+                                        • Strawberi Segar: 2 hari dari tanggal masuk<br>
+                                        • Strawberi Beku: 1 bulan dari tanggal masuk
+                                    </p>
                                 </div>
-                                @error('tanggal_kadaluarsa')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
                             </div>
 
                             <!-- Supplier -->

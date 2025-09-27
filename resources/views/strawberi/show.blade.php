@@ -93,11 +93,7 @@
                                         {{ number_format($strawberi->harga_beli, 0, ',', '.') }}</p>
                                 </div>
 
-                                <div>
-                                    <p class="text-sm text-gray-500">Harga Jual</p>
-                                    <p class="text-lg font-semibold text-gray-800">Rp
-                                        {{ number_format($strawberi->harga_jual, 0, ',', '.') }}</p>
-                                </div>
+
 
                                 <div>
                                     <p class="text-sm text-gray-500">Tanggal Masuk</p>
@@ -282,7 +278,7 @@
                             </button>
                             <h3 class="text-lg font-medium text-gray-900 mb-4">Jual Strawberi</h3>
                             <form method="POST" action="{{ route('strawberi.sell', $strawberi) }}"
-                                class="space-y-4">
+                                enctype="multipart/form-data" class="space-y-4">
                                 @csrf
                                 <div>
                                     <label for="jumlah_jual" class="block text-sm font-medium text-gray-700">Jumlah
@@ -298,9 +294,23 @@
                                     <label for="harga_jual" class="block text-sm font-medium text-gray-700">Harga Jual
                                         per kg (Rp)</label>
                                     <input type="number" step="1" min="0" name="harga_jual"
-                                        id="harga_jual" value="{{ $strawberi->harga_jual }}"
+                                        id="harga_jual" placeholder="Masukkan harga jual"
                                         class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
                                         required>
+                                    <small class="text-gray-500">Harga acuan beli: Rp {{ number_format($strawberi->harga_beli, 0, ',', '.') }} per kg</small>
+                                </div>
+                                <div>
+                                    <label for="pembeli" class="block text-sm font-medium text-gray-700">Nama Pembeli</label>
+                                    <input type="text" name="pembeli" id="pembeli" placeholder="Masukkan nama pembeli"
+                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
+                                        required>
+                                </div>
+                                <div>
+                                    <label for="bukti_pembayaran" class="block text-sm font-medium text-gray-700">Bukti Pembayaran (Opsional)</label>
+                                    <input type="file" name="bukti_pembayaran" id="bukti_pembayaran" 
+                                        accept=".jpg,.jpeg,.png,.pdf"
+                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500">
+                                    <small class="text-gray-500">Format: JPG, JPEG, PNG, PDF (Maksimal 2MB)</small>
                                 </div>
                                 <div>
                                     <label for="tanggal_jual" class="block text-sm font-medium text-gray-700">Tanggal

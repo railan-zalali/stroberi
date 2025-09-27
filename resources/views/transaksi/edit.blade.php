@@ -18,7 +18,7 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 border-b border-gray-200">
-                    <form method="POST" action="{{ route('transaksi.update', $transaksi) }}" class="space-y-6">
+                    <form method="POST" action="{{ route('transaksi.update', $transaksi) }}" class="space-y-6" enctype="multipart/form-data">
                         @csrf
                         @method('PUT')
 
@@ -113,18 +113,13 @@
                                 @enderror
                             </div>
 
-                            <!-- Supplier -->
+                            <!-- Supplier/Pembeli -->
                             <div>
-                                <label for="supplier_id" class="block text-sm font-medium text-gray-700">Supplier</label>
+                                <label for="supplier_name" class="block text-sm font-medium text-gray-700">Supplier/Pembeli</label>
                                 <div class="mt-1">
-                                    <select id="supplier_id" name="supplier_id" class="shadow-sm focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border-gray-300 rounded-md">
-                                        <option value="">Pilih Supplier</option>
-                                        @foreach($suppliers as $supplier)
-                                            <option value="{{ $supplier->id }}" {{ old('supplier_id', $transaksi->supplier_id) == $supplier->id ? 'selected' : '' }}>{{ $supplier->nama }}</option>
-                                        @endforeach
-                                    </select>
+                                    <input type="text" name="supplier_name" id="supplier_name" value="{{ old('supplier_name', $transaksi->supplier_name) }}" class="shadow-sm focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border-gray-300 rounded-md" placeholder="Masukkan nama supplier atau pembeli">
                                 </div>
-                                @error('supplier_id')
+                                @error('supplier_name')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
                             </div>
@@ -157,6 +152,27 @@
                                 @enderror
                             </div>
 
+                            <!-- Bukti Pembayaran -->
+                            <div class="md:col-span-2">
+                                <label for="bukti_pembayaran" class="block text-sm font-medium text-gray-700">Bukti Pembayaran (Opsional)</label>
+                                <div class="mt-1">
+                                    @if($transaksi->bukti_pembayaran)
+                                        <div class="mb-2">
+                                            <p class="text-sm text-gray-600">File saat ini: 
+                                                <a href="{{ Storage::url($transaksi->bukti_pembayaran) }}" target="_blank" class="text-blue-600 hover:underline">
+                                                    {{ basename($transaksi->bukti_pembayaran) }}
+                                                </a>
+                                            </p>
+                                        </div>
+                                    @endif
+                                    <input type="file" name="bukti_pembayaran" id="bukti_pembayaran" accept="image/*,.pdf" class="shadow-sm focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                                    <p class="mt-1 text-xs text-gray-500">Format yang didukung: JPG, PNG, PDF. Maksimal 2MB. Kosongkan jika tidak ingin mengubah file.</p>
+                                </div>
+                                @error('bukti_pembayaran')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
                             <!-- Keterangan -->
                             <div class="md:col-span-2">
                                 <label for="keterangan" class="block text-sm font-medium text-gray-700">Keterangan</label>
@@ -182,7 +198,7 @@
                             document.addEventListener('DOMContentLoaded', function() {
                                 const isPinjamanTrue = document.getElementById('is_pinjaman_true');
                                 const isPinjamanFalse = document.getElementById('is_pinjaman_false');
-                                const supplierField = document.getElementById('supplier_id').closest('div').parentElement;
+                                const supplierField = document.getElementById('supplier_name').closest('div').parentElement;
                                 
                                 function toggleSupplierField() {
                                     if (isPinjamanTrue.checked) {

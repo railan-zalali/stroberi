@@ -86,14 +86,10 @@
                                     <p class="text-lg font-semibold text-gray-800">{{ $transaksi->kategori ?? '-' }}</p>
                                 </div>
 
-                                @if($transaksi->supplier_id)
+                                @if($transaksi->supplier_name)
                                 <div>
-                                    <p class="text-sm text-gray-500">Supplier</p>
-                                    <p class="text-lg font-semibold text-gray-800">
-                                        <a href="{{ route('supplier.show', $transaksi->supplier_id) }}" class="text-blue-600 hover:underline">
-                                            {{ $transaksi->supplier->nama ?? 'Supplier #'.$transaksi->supplier_id }}
-                                        </a>
-                                    </p>
+                                    <p class="text-sm text-gray-500">Supplier/Pembeli</p>
+                                    <p class="text-lg font-semibold text-gray-800">{{ $transaksi->supplier_name }}</p>
                                 </div>
                                 @endif
 
@@ -121,6 +117,32 @@
                                     <p class="text-lg font-semibold text-gray-800">{{ $transaksi->keterangan ?? '-' }}
                                     </p>
                                 </div>
+
+                                @if($transaksi->bukti_pembayaran)
+                                <div class="col-span-2">
+                                    <p class="text-sm text-gray-500">Bukti Pembayaran</p>
+                                    <div class="mt-2">
+                                        @php
+                                            $extension = pathinfo($transaksi->bukti_pembayaran, PATHINFO_EXTENSION);
+                                        @endphp
+                                        
+                                        @if(in_array(strtolower($extension), ['jpg', 'jpeg', 'png']))
+                                            <img src="{{ Storage::url($transaksi->bukti_pembayaran) }}" 
+                                                 alt="Bukti Pembayaran" 
+                                                 class="max-w-xs h-auto rounded-lg shadow-md">
+                                        @else
+                                            <a href="{{ Storage::url($transaksi->bukti_pembayaran) }}" 
+                                               target="_blank"
+                                               class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                </svg>
+                                                Lihat Bukti Pembayaran ({{ strtoupper($extension) }})
+                                            </a>
+                                        @endif
+                                    </div>
+                                </div>
+                                @endif
                             </div>
                         </div>
 

@@ -22,7 +22,6 @@ class Strawberi extends Model
         'stok_rusak',
         'stok_adjustment',
         'harga_beli',
-        'harga_jual',
         'tanggal_masuk',
         'tanggal_kadaluarsa',
         'supplier_id',
@@ -38,7 +37,6 @@ class Strawberi extends Model
         'stok_rusak' => 'decimal:2',
         'stok_adjustment' => 'decimal:2',
         'harga_beli' => 'decimal:2',
-        'harga_jual' => 'decimal:2',
         'tanggal_masuk' => 'date',
         'tanggal_kadaluarsa' => 'date',
         'last_stock_update' => 'datetime',
@@ -58,6 +56,17 @@ class Strawberi extends Model
             if (empty($strawberi->batch_number)) {
                 $strawberi->batch_number = 'BTH-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -4));
             }
+            
+            // Auto calculate expiry date based on type
+            if (empty($strawberi->tanggal_kadaluarsa) && !empty($strawberi->tanggal_masuk)) {
+                $tanggalMasuk = Carbon::parse($strawberi->tanggal_masuk);
+                if ($strawberi->jenis === 'segar') {
+                    $strawberi->tanggal_kadaluarsa = $tanggalMasuk->addDays(2);
+                } elseif ($strawberi->jenis === 'beku') {
+                    $strawberi->tanggal_kadaluarsa = $tanggalMasuk->addMonth(1);
+                }
+            }
+            
             $strawberi->last_stock_update = now();
         });
     }
@@ -82,15 +91,8 @@ class Strawberi extends Model
         return $this->stok_awal * $this->harga_beli;
     }
 
-    public function getTotalNilaiJualAttribute()
-    {
-        return $this->stok_terjual * $this->harga_jual;
-    }
-
-    public function getLabaAttribute()
-    {
-        return $this->getTotalNilaiJualAttribute() - ($this->stok_terjual * $this->harga_beli);
-    }
+    // Removed getTotalNilaiJualAttribute and getLabaAttribute methods
+    // as they depend on harga_jual which is no longer used
 
     public function isKadaluarsa()
     {

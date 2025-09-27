@@ -119,22 +119,7 @@
                                 @enderror
                             </div>
 
-                            <!-- Harga Jual -->
-                            <div>
-                                <label for="harga_jual" class="block text-sm font-medium text-gray-700">Harga Jual
-                                    (Rp)</label>
-                                <div class="mt-1 relative rounded-md shadow-sm">
-                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <span class="text-gray-500 sm:text-sm">Rp</span>
-                                    </div>
-                                    <input type="number" name="harga_jual" id="harga_jual"
-                                        value="{{ old('harga_jual', $strawberi->harga_jual) }}"
-                                        class="focus:ring-red-500 focus:border-red-500 block w-full pl-12 sm:text-sm border-gray-300 rounded-md">
-                                </div>
-                                @error('harga_jual')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
+
 
                             <!-- Tanggal Masuk -->
                             <div>
@@ -159,6 +144,9 @@
                                         value="{{ old('tanggal_kadaluarsa', $strawberi->tanggal_kadaluarsa->format('Y-m-d')) }}"
                                         class="shadow-sm focus:ring-red-500 focus:border-red-500 block w-full sm:text-sm border-gray-300 rounded-md">
                                 </div>
+                                <p class="mt-1 text-xs text-gray-500">
+                                    Otomatis dihitung: Segar (2 hari), Beku (1 bulan) dari tanggal masuk. Dapat diubah manual jika diperlukan.
+                                </p>
                                 @error('tanggal_kadaluarsa')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror

@@ -17,6 +17,8 @@ class Transaksi extends Model
         'user_id',
         'kategori',
         'supplier_id',
+        'supplier_name',
+        'bukti_pembayaran',
         'tipe_transaksi',
         'is_pinjaman',
     ];
