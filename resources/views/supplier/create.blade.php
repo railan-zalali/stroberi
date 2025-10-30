@@ -120,29 +120,16 @@
                                         <span class="text-gray-500 sm:text-sm">Rp</span>
                                     </div>
                                     <input type="number" name="total_pinjaman" id="total_pinjaman"
-                                        value="{{ old('total_pinjaman', 0) }}"
-                                        class="focus:ring-blue-500 focus:border-blue-500 block w-full pl-12 sm:text-sm border-gray-300 rounded-md">
+                                        value="0"
+                                        disabled
+                                        class="bg-gray-100 cursor-not-allowed focus:ring-blue-500 focus:border-blue-500 block w-full pl-12 sm:text-sm border-gray-300 rounded-md">
                                 </div>
-                                @error('total_pinjaman')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
+                                <p class="mt-1 text-xs text-gray-500">Dihitung otomatis dari transaksi. Tidak perlu diisi.</p>
                             </div>
 
-                            <!-- Total Pembayaran -->
-                            <div>
-                                <label for="total_pembayaran" class="block text-sm font-medium text-gray-700">Total
-                                    Pembayaran (Rp)</label>
-                                <div class="mt-1 relative rounded-md shadow-sm">
-                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <span class="text-gray-500 sm:text-sm">Rp</span>
-                                    </div>
-                                    <input type="number" name="total_pembayaran" id="total_pembayaran"
-                                        value="{{ old('total_pembayaran', 0) }}"
-                                        class="focus:ring-blue-500 focus:border-blue-500 block w-full pl-12 sm:text-sm border-gray-300 rounded-md">
-                                </div>
-                                @error('total_pembayaran')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
+                            <!-- Catatan: Pinjaman & Pengembalian dihitung otomatis -->
+                            <div class="md:col-span-2 bg-gray-50 p-4 rounded-lg">
+                                <p class="text-sm text-gray-600">Nilai pinjaman, pengembalian, dan sisa pinjaman akan dihitung otomatis dari transaksi terkait supplier ini (pinjaman dan pengembalian). Tidak perlu diisi saat membuat supplier.</p>
                             </div>
 
                             <!-- Keterangan -->

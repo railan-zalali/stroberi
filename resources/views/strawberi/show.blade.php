@@ -168,18 +168,17 @@
                                 </div>
 
                                 <div>
-                                    <p class="text-sm text-gray-500">Total Pembayaran</p>
+                                    <p class="text-sm text-gray-500">Total Pengembalian</p>
                                     <p class="text-lg font-semibold text-green-600">
-                                        Rp {{ number_format($strawberi->supplier->total_pembayaran, 0, ',', '.') }}
+                                        Rp {{ number_format($strawberi->supplier->total_pengembalian, 0, ',', '.') }}
                                     </p>
                                 </div>
 
                                 <div>
                                     <p class="text-sm text-gray-500">Sisa Pinjaman</p>
                                     <p
-                                        class="text-lg font-semibold {{ $strawberi->supplier->total_pinjaman - $strawberi->supplier->total_pembayaran > 0 ? 'text-red-600' : 'text-green-600' }}">
-                                        Rp
-                                        {{ number_format($strawberi->supplier->total_pinjaman - $strawberi->supplier->total_pembayaran, 0, ',', '.') }}
+                                        class="text-lg font-semibold {{ $strawberi->supplier->sisa_pinjaman > 0 ? 'text-red-600' : 'text-green-600' }}">
+                                        Rp {{ number_format($strawberi->supplier->sisa_pinjaman, 0, ',', '.') }}
                                     </p>
                                 </div>
                             </div>

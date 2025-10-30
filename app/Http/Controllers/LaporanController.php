@@ -311,16 +311,19 @@ class LaporanController extends Controller
 
     public function supplier()
     {
-        // Get all suppliers with their stats
-        $allSuppliers = Supplier::with(['strawberis' => function ($query) {
-            $query->where('tanggal_kadaluarsa', '>=', now());
-        }])
+        // Get all suppliers with purchase totals (bukan stok berjalan)
+        $allSuppliers = Supplier::with(['strawberis'])
             ->get()
             ->map(function ($supplier) {
-                $supplier->total_kg = $supplier->strawberis->sum('stok_tersisa');
+                // Total pembelian (kg) dan nilai (harga beli * jumlah)
+                $supplier->total_kg = $supplier->strawberis->sum('jumlah');
                 $supplier->total_nilai = $supplier->strawberis->sum(function ($strawberi) {
-                    return $strawberi->stok_tersisa * $strawberi->harga_beli;
+                    return $strawberi->jumlah * $strawberi->harga_beli;
                 });
+                // Posisi pinjaman/pengembalian
+                $supplier->total_pinjaman = $supplier->total_pinjaman; // accessor
+                $supplier->total_pengembalian = $supplier->total_pengembalian; // accessor
+                $supplier->sisa_pinjaman = $supplier->sisa_pinjaman; // accessor
                 return $supplier;
             });
 
@@ -335,37 +338,40 @@ class LaporanController extends Controller
             ['path' => request()->url(), 'query' => request()->query()]
         );
 
-        // Get top suppliers by volume
-        $topSuppliersByVolume = Supplier::with(['strawberis' => function ($query) {
-            $query->where('tanggal_kadaluarsa', '>=', now());
-        }])
+        // Top suppliers by purchased volume (total jumlah)
+        $topSuppliersByVolume = Supplier::with(['strawberis'])
             ->get()
             ->map(function ($supplier) {
-                $supplier->total_kg = $supplier->strawberis->sum('stok_tersisa');
+                $supplier->total_kg = $supplier->strawberis->sum('jumlah');
                 return $supplier;
             })
             ->sortByDesc('total_kg')
             ->take(5);
 
-        // Get top suppliers by value
-        $topSuppliersByValue = Supplier::with(['strawberis' => function ($query) {
-            $query->where('tanggal_kadaluarsa', '>=', now());
-        }])
+        // Top suppliers by purchase value
+        $topSuppliersByValue = Supplier::with(['strawberis'])
             ->get()
             ->map(function ($supplier) {
                 $supplier->total_nilai = $supplier->strawberis->sum(function ($strawberi) {
-                    return $strawberi->stok_tersisa * $strawberi->harga_beli;
+                    return $strawberi->jumlah * $strawberi->harga_beli;
                 });
                 return $supplier;
             })
             ->sortByDesc('total_nilai')
             ->take(5);
 
-        // Get suppliers with outstanding debt
-        $suppliersWithDebt = Supplier::whereRaw('total_pinjaman > total_pembayaran')
-            ->orderByRaw('(total_pinjaman - total_pembayaran) DESC')
-            ->limit(5)
-            ->get();
+        // Suppliers with outstanding debt (gunakan accessor dari transaksi)
+        $suppliersWithDebt = Supplier::with([])
+            ->get()
+            ->map(function ($supplier) {
+                $supplier->sisa_pinjaman = $supplier->sisa_pinjaman;
+                return $supplier;
+            })
+            ->filter(function ($supplier) {
+                return $supplier->sisa_pinjaman > 0;
+            })
+            ->sortByDesc('sisa_pinjaman')
+            ->take(5);
 
         return view('laporan.supplier', compact(
             'suppliers',

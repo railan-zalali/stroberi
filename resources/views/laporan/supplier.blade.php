@@ -94,7 +94,7 @@
                 <!-- Suppliers with Debt -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 border-b border-gray-200">
-                        <h3 class="text-lg font-medium text-gray-900 mb-4">Supplier dengan Pinjaman Tertinggi</h3>
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Supplier dengan Sisa Pinjaman Tertinggi</h3>
 
                         @if ($suppliersWithDebt->count() > 0)
                             <div class="space-y-4">
@@ -103,13 +103,13 @@
                                         <div class="w-32 text-sm font-medium text-gray-900">{{ $supplier->nama }}</div>
                                         <div class="flex-1">
                                             <div class="overflow-hidden h-2 text-xs flex rounded bg-red-200">
-                                                <div style="width: {{ (($supplier->total_pinjaman - $supplier->total_pembayaran) / ($suppliersWithDebt->max('total_pinjaman') - $suppliersWithDebt->min('total_pembayaran'))) * 100 }}%"
+                                                <div style="width: {{ ($suppliersWithDebt->max('sisa_pinjaman') > 0 ? ($supplier->sisa_pinjaman / $suppliersWithDebt->max('sisa_pinjaman')) * 100 : 0) }}%"
                                                     class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-red-600">
                                                 </div>
                                             </div>
                                         </div>
                                         <div class="w-36 text-right text-sm text-red-600">Rp
-                                            {{ number_format($supplier->total_pinjaman - $supplier->total_pembayaran, 0, ',', '.') }}
+                                            {{ number_format($supplier->sisa_pinjaman, 0, ',', '.') }}
                                         </div>
                                     </div>
                                 @endforeach
@@ -146,9 +146,9 @@
                             </div>
 
                             <div class="bg-gray-50 p-4 rounded-lg text-center">
-                                <p class="text-sm font-medium text-gray-500 mb-1">Total Pembayaran</p>
+                                <p class="text-sm font-medium text-gray-500 mb-1">Total Pengembalian</p>
                                 <p class="text-xl font-bold text-green-600">Rp
-                                    {{ number_format($suppliers->sum('total_pembayaran'), 0, ',', '.') }}</p>
+                                    {{ number_format($suppliers->sum('total_pengembalian'), 0, ',', '.') }}</p>
                             </div>
                         </div>
                     </div>
@@ -178,7 +178,7 @@
                                     </th>
                                     <th scope="col"
                                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Total Pembayaran
+                                        Total Pengembalian
                                     </th>
                                     <th scope="col"
                                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -230,11 +230,14 @@
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="text-sm text-gray-900">{{ $supplier->telepon ?? '-' }}</div>
                                         </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            Rp {{ number_format($supplier->total_pinjaman, 0, ',', '.') }}
                                         </td>
-                                        <td
-                                            class="px-6 py-4 whitespace-nowrap text-sm {{ $supplier->total_pinjaman - $supplier->total_pembayaran > 0 ? 'text-red-600' : 'text-green-600' }}">
-                                            Rp
-                                            {{ number_format($supplier->total_pinjaman - $supplier->total_pembayaran, 0, ',', '.') }}
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            Rp {{ number_format($supplier->total_pengembalian, 0, ',', '.') }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm {{ $supplier->sisa_pinjaman > 0 ? 'text-red-600' : 'text-green-600' }}">
+                                            Rp {{ number_format($supplier->sisa_pinjaman, 0, ',', '.') }}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                             {{ number_format($supplier->total_kg ?? 0, 2) }} kg

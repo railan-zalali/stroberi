@@ -121,38 +121,23 @@
                                 @enderror
                             </div>
 
-                            <!-- Total Pinjaman -->
-                            <div>
-                                <label for="total_pinjaman" class="block text-sm font-medium text-gray-700">Total
-                                    Pinjaman (Rp)</label>
-                                <div class="mt-1 relative rounded-md shadow-sm">
-                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <span class="text-gray-500 sm:text-sm">Rp</span>
+                            <!-- Ringkasan Pinjaman (Bersifat Informasi) -->
+                            <div class="md:col-span-2">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-50 p-4 rounded-lg">
+                                    <div class="text-center">
+                                        <p class="text-sm font-medium text-gray-500 mb-1">Total Pinjaman</p>
+                                        <p class="text-lg font-bold text-red-600">Rp {{ number_format($supplier->total_pinjaman, 0, ',', '.') }}</p>
                                     </div>
-                                    <input type="number" name="total_pinjaman" id="total_pinjaman"
-                                        value="{{ old('total_pinjaman', $supplier->total_pinjaman) }}"
-                                        class="focus:ring-blue-500 focus:border-blue-500 block w-full pl-12 sm:text-sm border-gray-300 rounded-md">
-                                </div>
-                                @error('total_pinjaman')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <!-- Total Pembayaran -->
-                            <div>
-                                <label for="total_pembayaran" class="block text-sm font-medium text-gray-700">Total
-                                    Pembayaran (Rp)</label>
-                                <div class="mt-1 relative rounded-md shadow-sm">
-                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <span class="text-gray-500 sm:text-sm">Rp</span>
+                                    <div class="text-center">
+                                        <p class="text-sm font-medium text-gray-500 mb-1">Total Pengembalian</p>
+                                        <p class="text-lg font-bold text-green-600">Rp {{ number_format($supplier->total_pengembalian, 0, ',', '.') }}</p>
                                     </div>
-                                    <input type="number" name="total_pembayaran" id="total_pembayaran"
-                                        value="{{ old('total_pembayaran', $supplier->total_pembayaran) }}"
-                                        class="focus:ring-blue-500 focus:border-blue-500 block w-full pl-12 sm:text-sm border-gray-300 rounded-md">
+                                    <div class="text-center">
+                                        <p class="text-sm font-medium text-gray-500 mb-1">Sisa Pinjaman</p>
+                                        <p class="text-lg font-bold {{ $supplier->sisa_pinjaman > 0 ? 'text-red-600' : 'text-green-600' }}">Rp {{ number_format($supplier->sisa_pinjaman, 0, ',', '.') }}</p>
+                                    </div>
                                 </div>
-                                @error('total_pembayaran')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
+                                <p class="mt-2 text-xs text-gray-500">Nilai di atas dihitung otomatis dari transaksi pinjaman & pengembalian, tidak dapat diubah manual.</p>
                             </div>
 
                             <!-- Keterangan -->

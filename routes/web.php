@@ -29,6 +29,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Strawberi routes
+    // Penjualan global (stok gabungan) - definisikan sebelum resource agar tidak tertangkap oleh wildcard {strawberi}
+    Route::get('/strawberi/sell-global', [StrawberiController::class, 'sellGlobalForm'])->name('strawberi.sell-global.form');
+    Route::post('/strawberi/sell-global', [StrawberiController::class, 'sellGlobalStore'])->name('strawberi.sell-global.store');
+    
+    // Resource dan aksi jual per item
     Route::resource('strawberi', StrawberiController::class);
     Route::post('/strawberi/{strawberi}/sell', [StrawberiController::class, 'sell'])->name('strawberi.sell');
 

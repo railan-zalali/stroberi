@@ -139,17 +139,16 @@
                                     </span>
                                 </div>
                                 <div class="flex justify-between mb-2">
-                                    <span class="text-sm text-gray-500">Total Pembayaran:</span>
+                                    <span class="text-sm text-gray-500">Total Pengembalian:</span>
                                     <span class="text-sm font-semibold text-green-600">
-                                        Rp {{ number_format($supplier->total_pembayaran, 0, ',', '.') }}
+                                        Rp {{ number_format($supplier->total_pengembalian, 0, ',', '.') }}
                                     </span>
                                 </div>
                                 <div class="flex justify-between">
                                     <span class="text-sm text-gray-500">Sisa Pinjaman:</span>
                                     <span
-                                        class="text-sm font-semibold {{ $supplier->total_pinjaman - $supplier->total_pembayaran > 0 ? 'text-red-600' : 'text-green-600' }}">
-                                        Rp
-                                        {{ number_format($supplier->total_pinjaman - $supplier->total_pembayaran, 0, ',', '.') }}
+                                        class="text-sm font-semibold {{ $supplier->sisa_pinjaman > 0 ? 'text-red-600' : 'text-green-600' }}">
+                                        Rp {{ number_format($supplier->sisa_pinjaman, 0, ',', '.') }}
                                     </span>
                                 </div>
                             </div>

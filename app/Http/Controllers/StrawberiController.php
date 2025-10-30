@@ -114,12 +114,19 @@ class StrawberiController extends Controller
             'jumlah' => 'required|numeric|min:0',
             'harga_beli' => 'required|numeric|min:0',
             'tanggal_masuk' => 'required|date',
-            'supplier_id' => 'required|exists:suppliers,id',
+            'supplier_id' => 'nullable|exists:suppliers,id',
             'keterangan' => 'nullable|string',
             'buat_transaksi' => 'boolean',
             'tambah_pinjaman' => 'boolean',
             'metode_pembayaran' => 'nullable|string|in:tunai,kredit',
         ]);
+
+        // Jika pembayaran kredit atau ingin menambah pinjaman, supplier wajib diisi
+        if (($request->metode_pembayaran === 'kredit') || ($request->has('tambah_pinjaman') && $request->tambah_pinjaman)) {
+            $request->validate([
+                'supplier_id' => 'required|exists:suppliers,id',
+            ]);
+        }
 
         DB::beginTransaction();
         try {
@@ -136,7 +143,7 @@ class StrawberiController extends Controller
                 'keterangan' => $request->keterangan,
             ]);
 
-            $supplier = Supplier::find($request->supplier_id);
+            $supplier = $request->supplier_id ? Supplier::find($request->supplier_id) : null;
             $totalHarga = $request->harga_beli * $request->jumlah;
             
             // Tentukan metode pembayaran (default: tunai)
@@ -150,10 +157,10 @@ class StrawberiController extends Controller
                     'jumlah' => $totalHarga,
                     'tanggal' => $request->tanggal_masuk,
                     'kategori' => 'Pembelian Strawberi (Kredit)',
-                    'keterangan' => "Pembelian kredit {$request->jumlah} kg strawberi {$request->jenis} grade {$request->grade} dari {$supplier->nama}",
+                    'keterangan' => "Pembelian kredit {$request->jumlah} kg strawberi {$request->jenis} grade {$request->grade}" . ($supplier ? " dari {$supplier->nama}" : ''),
                     'user_id' => Auth::id(),
-                    'supplier_id' => $supplier->id,
-                    'supplier_name' => $supplier->nama,
+                    'supplier_id' => $supplier ? $supplier->id : null,
+                    'supplier_name' => $supplier ? $supplier->nama : null,
                     'tipe_transaksi' => 'pinjaman',
                     'is_pinjaman' => true,
                 ]);
@@ -165,10 +172,10 @@ class StrawberiController extends Controller
                     'jumlah' => $totalHarga,
                     'tanggal' => $request->tanggal_masuk,
                     'kategori' => 'Pembelian Strawberi (Tunai)',
-                    'keterangan' => "Pembelian tunai {$request->jumlah} kg strawberi {$request->jenis} grade {$request->grade} dari {$supplier->nama}",
+                    'keterangan' => "Pembelian tunai {$request->jumlah} kg strawberi {$request->jenis} grade {$request->grade}" . ($supplier ? " dari {$supplier->nama}" : ''),
                     'user_id' => Auth::id(),
-                    'supplier_id' => $supplier->id,
-                    'supplier_name' => $supplier->nama,
+                    'supplier_id' => $supplier ? $supplier->id : null,
+                    'supplier_name' => $supplier ? $supplier->nama : null,
                     'tipe_transaksi' => 'pembelian',
                     'is_pinjaman' => false,
                 ]);
@@ -182,10 +189,10 @@ class StrawberiController extends Controller
                     'jumlah' => $totalHarga,
                     'tanggal' => $request->tanggal_masuk,
                     'kategori' => 'Pinjaman Supplier',
-                    'keterangan' => "Penambahan pinjaman untuk supplier {$supplier->nama} (Pembelian Strawberi Tunai)",
+                    'keterangan' => "Penambahan pinjaman untuk supplier" . ($supplier ? " {$supplier->nama}" : '') . " (Pembelian Strawberi Tunai)",
                     'user_id' => Auth::id(),
-                    'supplier_id' => $supplier->id,
-                    'supplier_name' => $supplier->nama,
+                    'supplier_id' => $supplier ? $supplier->id : null,
+                    'supplier_name' => $supplier ? $supplier->nama : null,
                     'tipe_transaksi' => 'pinjaman',
                     'is_pinjaman' => true,
                 ]);
@@ -224,7 +231,7 @@ class StrawberiController extends Controller
             'harga_beli' => 'required|numeric|min:0',
             'tanggal_masuk' => 'required|date',
             'tanggal_kadaluarsa' => 'required|date|after:tanggal_masuk',
-            'supplier_id' => 'required|exists:suppliers,id',
+            'supplier_id' => 'nullable|exists:suppliers,id',
             'keterangan' => 'nullable|string',
         ]);
 
@@ -241,6 +248,146 @@ class StrawberiController extends Controller
 
         return redirect()->route('strawberi.index')
             ->with('success', 'Stok strawberi berhasil diperbarui');
+    }
+
+    // Form penjualan global (stok gabungan, FEFO)
+    public function sellGlobalForm()
+    {
+        return view('strawberi.sell-global');
+    }
+
+    // Proses penjualan global dengan FEFO dan campur grade jika perlu
+    public function sellGlobalStore(Request $request)
+    {
+        $request->validate([
+            'jenis' => 'required|in:segar,beku',
+            'preferensi_grade' => 'nullable|in:a,b,c',
+            'jumlah_jual' => 'required|numeric|min:0.01',
+            'price_mode' => 'required|in:manual,buy',
+            'harga_jual' => 'nullable|numeric|min:0',
+            'pembeli' => 'required|string|max:255',
+            'bukti_pembayaran' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:4096',
+            'tanggal_jual' => 'required|date',
+            'keterangan' => 'nullable|string',
+        ]);
+
+        if ($request->price_mode === 'manual') {
+            $request->validate([
+                'harga_jual' => 'required|numeric|min:0',
+            ]);
+        }
+
+        DB::beginTransaction();
+        try {
+            // Handle bukti pembayaran
+            $buktiPembayaranPath = null;
+            if ($request->hasFile('bukti_pembayaran')) {
+                $buktiPembayaranPath = $request->file('bukti_pembayaran')->store('bukti_pembayaran', 'public');
+            }
+
+            $remaining = $request->jumlah_jual;
+            $allocated = [];
+
+            // Ambil batch utama sesuai preferensi grade (FEFO)
+            $primaryBatches = Strawberi::where('jenis', $request->jenis)
+                ->where('tanggal_kadaluarsa', '>=', now())
+                ->when($request->preferensi_grade, function ($q) use ($request) {
+                    $q->where('grade', $request->preferensi_grade);
+                })
+                ->orderBy('tanggal_kadaluarsa', 'asc')
+                ->orderBy('tanggal_masuk', 'asc')
+                ->get();
+
+            // Ambil batch fallback (campur grade) jika stok preferensi tidak cukup
+            $fallbackBatches = Strawberi::where('jenis', $request->jenis)
+                ->where('tanggal_kadaluarsa', '>=', now())
+                ->when($request->preferensi_grade, function ($q) use ($request) {
+                    $q->where('grade', '!=', $request->preferensi_grade);
+                })
+                ->orderBy('tanggal_kadaluarsa', 'asc')
+                ->orderBy('tanggal_masuk', 'asc')
+                ->get();
+
+            $batches = $primaryBatches->concat($fallbackBatches);
+
+            foreach ($batches as $batch) {
+                if ($remaining <= 0) break;
+                $available = $batch->stok_tersisa;
+                if ($available <= 0) continue;
+
+                $take = min($available, $remaining);
+                if ($take <= 0) continue;
+
+                // Catat alokasi
+                $allocated[] = [
+                    'batch' => $batch,
+                    'qty' => $take,
+                ];
+
+                // Record movement (sekalian update stok terjual)
+                $batch->recordStockMovement('sale', $take, 'Penjualan Global (FEFO)');
+
+                $remaining -= $take;
+            }
+
+            $allocatedTotal = collect($allocated)->sum('qty');
+
+            if ($allocatedTotal <= 0) {
+                DB::rollBack();
+                return redirect()->back()
+                    ->with('error', 'Stok global tidak mencukupi untuk penjualan')
+                    ->withInput();
+            }
+
+            // Hitung jumlah uang berdasarkan mode harga
+            if ($request->price_mode === 'manual') {
+                $jumlahUang = $allocatedTotal * $request->harga_jual;
+            } else { // buy: gunakan harga beli batch (weighted)
+                $jumlahUang = 0;
+                foreach ($allocated as $alloc) {
+                    $jumlahUang += $alloc['qty'] * $alloc['batch']->harga_beli;
+                }
+            }
+
+            // Buat keterangan ringkas
+            $detailAlokasi = collect($allocated)->map(function ($alloc) {
+                return $alloc['qty'] . 'kg ' . $alloc['batch']->grade . ' (exp ' . $alloc['batch']->tanggal_kadaluarsa->format('d/m') . ')';
+            })->implode(', ');
+
+            $keterangan = 'Penjualan Global ' . $request->jenis
+                . ($request->preferensi_grade ? " preferensi grade {$request->preferensi_grade}" : '')
+                . ' dengan FEFO, alokasi: ' . $detailAlokasi
+                . ($request->keterangan ? ' - ' . $request->keterangan : '');
+
+            // Catat transaksi pemasukan
+            Transaksi::create([
+                'jenis' => 'pemasukan',
+                'jumlah' => $jumlahUang,
+                'tanggal' => $request->tanggal_jual,
+                'kategori' => 'Penjualan Strawberi (Global)',
+                'keterangan' => $keterangan,
+                'user_id' => Auth::id(),
+                'supplier_name' => $request->pembeli,
+                'bukti_pembayaran' => $buktiPembayaranPath,
+                'tipe_transaksi' => 'penjualan',
+                'is_pinjaman' => false,
+            ]);
+
+            DB::commit();
+
+            $msg = 'Penjualan global berhasil (' . $allocatedTotal . ' kg dialokasikan).';
+            if ($remaining > 0) {
+                $msg .= ' Stok tidak cukup, penjualan partial dilakukan.';
+            }
+
+            return redirect()->route('strawberi.index')->with('success', $msg);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
+                ->withInput();
+        }
     }
 
     public function destroy(Strawberi $strawberi)
