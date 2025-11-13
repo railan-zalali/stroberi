@@ -88,7 +88,7 @@ class TransaksiController extends Controller
             $kategori = $request->jenis == 'pemasukan' ? 'Penjualan' : 'Operasional';
         }
         
-        // Jika tipe transaksi adalah pinjaman dan supplier_name tidak ada, tampilkan error
+        // Validasi khusus pinjaman: butuh nama supplier
         if (($request->is_pinjaman || $request->tipe_transaksi == 'pinjaman') && empty($request->supplier_name)) {
             return redirect()->back()
                 ->with('error', 'Nama supplier harus diisi untuk transaksi pinjaman')
@@ -151,7 +151,7 @@ class TransaksiController extends Controller
             'bukti_pembayaran' => 'nullable|file|mimes:jpeg,jpg,png,pdf|max:2048',
         ]);
         
-        // Jika tipe transaksi adalah pinjaman dan supplier_name tidak ada, tampilkan error
+        // Validasi khusus pinjaman: butuh nama supplier
         if (($request->is_pinjaman || $request->tipe_transaksi == 'pinjaman') && empty($request->supplier_name)) {
             return redirect()->back()
                 ->with('error', 'Nama supplier harus diisi untuk transaksi pinjaman')

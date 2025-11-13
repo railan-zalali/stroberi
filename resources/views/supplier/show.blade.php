@@ -84,27 +84,60 @@
                         <div class="space-y-4">
                             <div class="bg-gray-50 rounded-lg p-4">
                                 <div class="flex justify-between mb-2">
-                                    <h4 class="text-sm font-medium text-gray-500">Total Pinjaman ke Supplier</h4>
-                                    <span class="text-lg font-semibold text-red-600">
-                                        Rp {{ number_format($supplier->total_pinjaman, 0, ',', '.') }}
-                                    </span>
+                                    <h4 class="text-sm font-medium text-gray-500">Pembayaran ke suplier (pengeluaran pembelian stroberi)</h4>
+                                    <span class="text-lg font-semibold text-red-600">Rp {{ number_format($pembayaranKeSupplier, 0, ',', '.') }}</span>
                                 </div>
                                 <div class="flex justify-between mb-2">
-                                    <h4 class="text-sm font-medium text-gray-500">Total Pengembalian dari Supplier</h4>
-                                    <span class="text-lg font-semibold text-green-600">
-                                        Rp {{ number_format($supplier->total_pengembalian, 0, ',', '.') }}
-                                    </span>
+                                    <h4 class="text-sm font-medium text-gray-500">Pinjaman suplier (pengeluaran)</h4>
+                                    <span class="text-lg font-semibold text-red-600">Rp {{ number_format($pinjamanSupplier, 0, ',', '.') }}</span>
+                                </div>
+                                <div class="flex justify-between mb-2">
+                                    <h4 class="text-sm font-medium text-gray-500">Pembayaran dari suplier (pemasukan)</h4>
+                                    <span class="text-lg font-semibold text-green-600">Rp {{ number_format($pembayaranDariSupplier, 0, ',', '.') }}</span>
                                 </div>
                                 <div class="flex justify-between pt-2 border-t border-gray-200">
-                                    <h4 class="text-sm font-medium text-gray-500">Sisa Pinjaman</h4>
-                                    <span
-                                        class="text-lg font-semibold {{ $sisaPinjaman > 0 ? 'text-red-600' : 'text-green-600' }}">
-                                        Rp {{ number_format($sisaPinjaman, 0, ',', '.') }}
-                                    </span>
+                                    <h4 class="text-sm font-medium text-gray-500">Sisa pinjaman suplier</h4>
+                                    <span class="text-lg font-semibold {{ $sisaPinjaman > 0 ? 'text-red-600' : 'text-green-600' }}">Rp {{ number_format($sisaPinjaman, 0, ',', '.') }}</span>
+                                </div>
+                                @if($pendingBatches->count() > 0)
+                                <div class="mt-4">
+                                    <h4 class="text-sm font-medium text-gray-700 mb-2">Batch Pending (belum diposting)</h4>
+                                    <div class="text-xs text-gray-600 mb-2">Total Pending: {{ number_format($pendingTotalKg, 2) }} kg, Nilai: Rp {{ number_format($pendingTotalNilai, 0, ',', '.') }}</div>
+                                    <div class="overflow-x-auto">
+                                        <table class="min-w-full divide-y divide-gray-200">
+                                            <thead class="bg-gray-50">
+                                                <tr>
+                                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Jenis</th>
+                                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Grade</th>
+                                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Jumlah</th>
+                                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Harga Beli</th>
+                                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tanggal Masuk</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="bg-white divide-y divide-gray-200">
+                                                @foreach($pendingBatches as $pb)
+                                                    <tr>
+                                                        <td class="px-4 py-2 text-sm">{{ ucfirst($pb->jenis) }}</td>
+                                                        <td class="px-4 py-2 text-sm">{{ strtoupper($pb->grade) }}</td>
+                                                        <td class="px-4 py-2 text-sm">{{ number_format($pb->stok_tersisa, 2) }} kg</td>
+                                                        <td class="px-4 py-2 text-sm">Rp {{ number_format($pb->harga_beli, 0, ',', '.') }}</td>
+                                                        <td class="px-4 py-2 text-sm">{{ $pb->tanggal_masuk->format('d/m/Y') }}</td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                @endif
+                                <div class="mt-4">
+                                    <form action="{{ route('supplier.finish', $supplier) }}" method="POST">
+                                        @csrf
+                                        <button type="submit" class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                            Selesaikan Transaksi
+                                        </button>
+                                    </form>
                                 </div>
                             </div>
-
-
                         </div>
 
                         <!-- Form Pengembalian Pinjaman -->
@@ -411,10 +444,6 @@
                                                 </th>
                                                 <th scope="col"
                                                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                                                    Harga Jual
-                                                </th>
-                                                <th scope="col"
-                                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                                                     Tanggal Masuk
                                                 </th>
                                                 <th scope="col"
@@ -475,11 +504,6 @@
                                                     <td class="px-6 py-4">
                                                         <div class="text-sm text-gray-900">Rp
                                                             {{ number_format($strawberi->harga_beli, 0, ',', '.') }}
-                                                        </div>
-                                                    </td>
-                                                    <td class="px-6 py-4">
-                                                        <div class="text-sm text-gray-900">Rp
-                                                            {{ number_format($strawberi->harga_jual, 0, ',', '.') }}
                                                         </div>
                                                     </td>
                                                     <td class="px-6 py-4">

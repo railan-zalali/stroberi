@@ -13,7 +13,9 @@ class StrawberiController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Strawberi::with('supplier')->orderBy('tanggal_masuk', 'desc');
+        $query = Strawberi::with('supplier')
+            ->where('is_posted', true)
+            ->orderBy('tanggal_masuk', 'desc');
 
         // Filter berdasarkan supplier
         if ($request->filled('supplier_id')) {
@@ -62,7 +64,8 @@ class StrawberiController extends Controller
         $stokBeku = $stokBekuA + $stokBekuB + $stokBekuC;
 
         // Hitung stok yang hampir kadaluarsa
-        $kadaluarsa = Strawberi::where('tanggal_kadaluarsa', '>=', now())
+        $kadaluarsa = Strawberi::where('is_posted', true)
+            ->where('tanggal_kadaluarsa', '>=', now())
             ->where('tanggal_kadaluarsa', '<=', now()->addDays(7))
             ->get()
             ->sum(function ($strawberi) {
@@ -73,7 +76,8 @@ class StrawberiController extends Controller
         $suppliers = Supplier::where('status', 'aktif')->orderBy('nama')->get();
 
         // Hitung nilai stok berdasarkan harga beli
-        $nilaiStok = Strawberi::where('tanggal_kadaluarsa', '>=', now())
+        $nilaiStok = Strawberi::where('is_posted', true)
+            ->where('tanggal_kadaluarsa', '>=', now())
             ->get()
             ->sum(function ($strawberi) {
                 return $strawberi->stok_tersisa * $strawberi->harga_beli;
@@ -114,23 +118,15 @@ class StrawberiController extends Controller
             'jumlah' => 'required|numeric|min:0',
             'harga_beli' => 'required|numeric|min:0',
             'tanggal_masuk' => 'required|date',
-            'supplier_id' => 'nullable|exists:suppliers,id',
+            'supplier_id' => 'required|exists:suppliers,id',
             'keterangan' => 'nullable|string',
-            'buat_transaksi' => 'boolean',
-            'tambah_pinjaman' => 'boolean',
-            'metode_pembayaran' => 'nullable|string|in:tunai,kredit',
         ]);
 
-        // Jika pembayaran kredit atau ingin menambah pinjaman, supplier wajib diisi
-        if (($request->metode_pembayaran === 'kredit') || ($request->has('tambah_pinjaman') && $request->tambah_pinjaman)) {
-            $request->validate([
-                'supplier_id' => 'required|exists:suppliers,id',
-            ]);
-        }
+        // Supplier wajib diisi karena default kredit
 
         DB::beginTransaction();
         try {
-            // Simpan data strawberi
+            // Simpan data strawberi sebagai pending (belum masuk stok global)
             $strawberi = Strawberi::create([
                 'jenis' => $request->jenis,
                 'grade' => $request->grade,
@@ -141,62 +137,25 @@ class StrawberiController extends Controller
                 'tanggal_masuk' => $request->tanggal_masuk,
                 'supplier_id' => $request->supplier_id,
                 'keterangan' => $request->keterangan,
+                'is_posted' => false,
             ]);
 
             $supplier = $request->supplier_id ? Supplier::find($request->supplier_id) : null;
             $totalHarga = $request->harga_beli * $request->jumlah;
             
-            // Tentukan metode pembayaran (default: tunai)
-            $metodePembayaran = $request->metode_pembayaran ?? 'tunai';
-            
-            // Jika metode pembayaran adalah kredit, tambahkan ke pinjaman supplier
-            if ($metodePembayaran === 'kredit') {
-                // Buat catatan transaksi dengan kategori khusus untuk kredit
-                Transaksi::create([
-                    'jenis' => 'pengeluaran',
-                    'jumlah' => $totalHarga,
-                    'tanggal' => $request->tanggal_masuk,
-                    'kategori' => 'Pembelian Strawberi (Kredit)',
-                    'keterangan' => "Pembelian kredit {$request->jumlah} kg strawberi {$request->jenis} grade {$request->grade}" . ($supplier ? " dari {$supplier->nama}" : ''),
-                    'user_id' => Auth::id(),
-                    'supplier_id' => $supplier ? $supplier->id : null,
-                    'supplier_name' => $supplier ? $supplier->nama : null,
-                    'tipe_transaksi' => 'pinjaman',
-                    'is_pinjaman' => true,
-                ]);
-            } 
-            // Jika metode pembayaran tunai dan diminta buat transaksi
-            elseif ($metodePembayaran === 'tunai' && ($request->has('buat_transaksi') && $request->buat_transaksi)) {
-                Transaksi::create([
-                    'jenis' => 'pengeluaran',
-                    'jumlah' => $totalHarga,
-                    'tanggal' => $request->tanggal_masuk,
-                    'kategori' => 'Pembelian Strawberi (Tunai)',
-                    'keterangan' => "Pembelian tunai {$request->jumlah} kg strawberi {$request->jenis} grade {$request->grade}" . ($supplier ? " dari {$supplier->nama}" : ''),
-                    'user_id' => Auth::id(),
-                    'supplier_id' => $supplier ? $supplier->id : null,
-                    'supplier_name' => $supplier ? $supplier->nama : null,
-                    'tipe_transaksi' => 'pembelian',
-                    'is_pinjaman' => false,
-                ]);
-            }
-            
-            // Jika metode pembayaran tunai tapi masih ingin menambahkan ke pinjaman supplier
-            // (kasus khusus, misalnya untuk mencatat hutang lain)
-            if ($metodePembayaran === 'tunai' && ($request->has('tambah_pinjaman') && $request->tambah_pinjaman)) {
-                Transaksi::create([
-                    'jenis' => 'pengeluaran',
-                    'jumlah' => $totalHarga,
-                    'tanggal' => $request->tanggal_masuk,
-                    'kategori' => 'Pinjaman Supplier',
-                    'keterangan' => "Penambahan pinjaman untuk supplier" . ($supplier ? " {$supplier->nama}" : '') . " (Pembelian Strawberi Tunai)",
-                    'user_id' => Auth::id(),
-                    'supplier_id' => $supplier ? $supplier->id : null,
-                    'supplier_name' => $supplier ? $supplier->nama : null,
-                    'tipe_transaksi' => 'pinjaman',
-                    'is_pinjaman' => true,
-                ]);
-            }
+            // Default: pembayaran kredit (pinjaman), tidak masuk pembukuan sampai selesai
+            Transaksi::create([
+                'jenis' => 'pengeluaran',
+                'jumlah' => $totalHarga,
+                'tanggal' => $request->tanggal_masuk,
+                'kategori' => 'Pembelian Strawberi (Kredit)',
+                'keterangan' => "Pembelian kredit {$request->jumlah} kg strawberi {$request->jenis} grade {$request->grade}" . ($supplier ? " dari {$supplier->nama}" : ''),
+                'user_id' => Auth::id(),
+                'supplier_id' => $supplier ? $supplier->id : null,
+                'supplier_name' => $supplier ? $supplier->nama : null,
+                'tipe_transaksi' => 'pinjaman',
+                'is_pinjaman' => true,
+            ]);
 
             DB::commit();
 
@@ -290,6 +249,7 @@ class StrawberiController extends Controller
 
             // Ambil batch utama sesuai preferensi grade (FEFO)
             $primaryBatches = Strawberi::where('jenis', $request->jenis)
+                ->where('is_posted', true)
                 ->where('tanggal_kadaluarsa', '>=', now())
                 ->when($request->preferensi_grade, function ($q) use ($request) {
                     $q->where('grade', $request->preferensi_grade);
@@ -300,6 +260,7 @@ class StrawberiController extends Controller
 
             // Ambil batch fallback (campur grade) jika stok preferensi tidak cukup
             $fallbackBatches = Strawberi::where('jenis', $request->jenis)
+                ->where('is_posted', true)
                 ->where('tanggal_kadaluarsa', '>=', now())
                 ->when($request->preferensi_grade, function ($q) use ($request) {
                     $q->where('grade', '!=', $request->preferensi_grade);
@@ -399,6 +360,13 @@ class StrawberiController extends Controller
 
     public function sell(Request $request, Strawberi $strawberi)
     {
+        // Batasi penjualan hanya untuk batch yang sudah diposting
+        if (!$strawberi->is_posted) {
+            return redirect()->back()
+                ->with('error', 'Batch ini belum diposting ke stok global. Selesaikan transaksi terlebih dahulu di halaman supplier.')
+                ->withInput();
+        }
+
         $request->validate([
             'jumlah_jual' => "required|numeric|min:0.01|max:{$strawberi->stok_tersisa}",
             'harga_jual' => 'required|numeric|min:0',
@@ -469,7 +437,8 @@ class StrawberiController extends Controller
      */
     private function hitungStokBerdasarkanJenisGrade($jenis, $grade)
     {
-        return Strawberi::where('jenis', $jenis)
+        return Strawberi::where('is_posted', true)
+            ->where('jenis', $jenis)
             ->where('grade', $grade)
             ->where('tanggal_kadaluarsa', '>=', now())
             ->get()

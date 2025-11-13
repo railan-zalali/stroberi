@@ -69,8 +69,9 @@ class SupplierController extends Controller
 
     public function show(Supplier $supplier)
     {
-        // Ambil data strawberi dari supplier ini
+        // Ambil data strawberi dari supplier ini (hanya yang sudah diposting)
         $strawberis = Strawberi::where('supplier_id', $supplier->id)
+            ->where('is_posted', true)
             ->orderBy('tanggal_masuk', 'desc')
             ->paginate(5);
 
@@ -87,8 +88,36 @@ class SupplierController extends Controller
             ->orderBy('tanggal', 'desc')
             ->paginate(5);
 
-        // Hitung sisa pinjaman menggunakan accessor
+        // Ringkasan sesuai kebutuhan
+        $pembayaranKeSupplier = Transaksi::where('supplier_id', $supplier->id)
+            ->where('jenis', 'pengeluaran')
+            ->where('is_pinjaman', false)
+            ->where(function ($q) {
+                $q->where('kategori', 'like', '%Pembelian Strawberi%')
+                  ->orWhere('kategori', 'like', '%Pembayaran ke Supplier%');
+            })
+            ->sum('jumlah');
+
+        $pinjamanSupplier = Transaksi::where('supplier_id', $supplier->id)
+            ->where('jenis', 'pengeluaran')
+            ->where('is_pinjaman', true)
+            ->sum('jumlah');
+
+        $pembayaranDariSupplier = Transaksi::where('supplier_id', $supplier->id)
+            ->where('jenis', 'pemasukan')
+            ->where('tipe_transaksi', 'pengembalian')
+            ->sum('jumlah');
+
         $sisaPinjaman = $supplier->sisa_pinjaman;
+
+        // Batch pending (belum diposting)
+        $pendingBatches = Strawberi::where('supplier_id', $supplier->id)
+            ->where('is_posted', false)
+            ->orderBy('tanggal_masuk', 'desc')
+            ->get();
+
+        $pendingTotalKg = $pendingBatches->sum('stok_tersisa');
+        $pendingTotalNilai = $pendingBatches->sum(function ($b) { return $b->stok_tersisa * $b->harga_beli; });
 
         return view('supplier.show', compact(
             'supplier',
@@ -96,13 +125,56 @@ class SupplierController extends Controller
             'totalKg',
             'totalNilai',
             'transaksis',
-            'sisaPinjaman'
+            'sisaPinjaman',
+            'pembayaranKeSupplier',
+            'pinjamanSupplier',
+            'pembayaranDariSupplier',
+            'pendingBatches',
+            'pendingTotalKg',
+            'pendingTotalNilai'
         ));
     }
 
     public function edit(Supplier $supplier)
     {
         return view('supplier.edit', compact('supplier'));
+    }
+
+    // Selesaikan transaksi kredit: posting stok dan pindahkan pinjaman ke pembukuan
+    public function finishTransactions(Supplier $supplier)
+    {
+        DB::beginTransaction();
+        try {
+            // Posting semua batch strawberi pending
+            Strawberi::where('supplier_id', $supplier->id)
+                ->where('is_posted', false)
+                ->update(['is_posted' => true]);
+
+            // Ubah transaksi pembelian kredit menjadi pembelian (masuk pembukuan) dengan audit keterangan
+            $userName = auth()->user() ? auth()->user()->name : 'system';
+            $nowText = now()->format('d/m/Y H:i');
+
+            $pinjamanPembelian = Transaksi::where('supplier_id', $supplier->id)
+                ->where('is_pinjaman', true)
+                ->where('kategori', 'Pembelian Strawberi (Kredit)')
+                ->get();
+
+            foreach ($pinjamanPembelian as $tx) {
+                $auditNote = " | Diselesaikan pada {$nowText} oleh {$userName}";
+                $tx->is_pinjaman = false;
+                $tx->tipe_transaksi = 'pembelian';
+                $tx->keterangan = trim(($tx->keterangan ?? '') . $auditNote);
+                $tx->save();
+            }
+
+            DB::commit();
+            return redirect()->route('supplier.show', $supplier)
+                ->with('success', 'Transaksi kredit diselesaikan. Stok masuk ke global dan pembukuan diperbarui.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
     }
 
     public function update(Request $request, Supplier $supplier)

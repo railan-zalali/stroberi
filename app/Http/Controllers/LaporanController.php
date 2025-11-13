@@ -52,10 +52,12 @@ class LaporanController extends Controller
 
         // Calculate totals
         $totalPemasukan = Transaksi::where('jenis', 'pemasukan')
+            ->where('is_pinjaman', false)
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->sum('jumlah');
 
         $totalPengeluaran = Transaksi::where('jenis', 'pengeluaran')
+            ->where('is_pinjaman', false)
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->sum('jumlah');
 
@@ -63,6 +65,7 @@ class LaporanController extends Controller
 
         // Generate PDF report
         $transaksis = Transaksi::whereBetween('tanggal', [$startDate, $endDate])
+            ->where('is_pinjaman', false)
             ->orderBy('tanggal', 'asc')
             ->get();
 
@@ -114,12 +117,14 @@ class LaporanController extends Controller
 
         // Get category totals for pie chart
         $pemasukanKategori = Transaksi::where('jenis', 'pemasukan')
+            ->where('is_pinjaman', false)
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->selectRaw('kategori, sum(jumlah) as total')
             ->groupBy('kategori')
             ->get();
 
         $pengeluaranKategori = Transaksi::where('jenis', 'pengeluaran')
+            ->where('is_pinjaman', false)
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->selectRaw('kategori, sum(jumlah) as total')
             ->groupBy('kategori')
@@ -127,6 +132,7 @@ class LaporanController extends Controller
 
         // Get daily totals for line chart
         $dailyData = Transaksi::whereBetween('tanggal', [$startDate, $endDate])
+            ->where('is_pinjaman', false)
             ->selectRaw('tanggal, jenis, sum(jumlah) as total')
             ->groupBy('tanggal', 'jenis')
             ->get()
@@ -175,6 +181,7 @@ class LaporanController extends Controller
 
         // Get monthly data for the current year
         $bulananData = Transaksi::whereYear('tanggal', $tahun)
+            ->where('is_pinjaman', false)
             ->selectRaw('MONTH(tanggal) as bulan, jenis, sum(jumlah) as total')
             ->groupBy('bulan', 'jenis')
             ->get()
@@ -185,12 +192,14 @@ class LaporanController extends Controller
 
         // Get category totals for the selected month
         $pemasukanKategori = Transaksi::where('jenis', 'pemasukan')
+            ->where('is_pinjaman', false)
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->selectRaw('kategori, sum(jumlah) as total')
             ->groupBy('kategori')
             ->get();
 
         $pengeluaranKategori = Transaksi::where('jenis', 'pengeluaran')
+            ->where('is_pinjaman', false)
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->selectRaw('kategori, sum(jumlah) as total')
             ->groupBy('kategori')
@@ -198,10 +207,12 @@ class LaporanController extends Controller
 
         // Get summary data for the selected month
         $totalPemasukan = Transaksi::where('jenis', 'pemasukan')
+            ->where('is_pinjaman', false)
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->sum('jumlah');
 
         $totalPengeluaran = Transaksi::where('jenis', 'pengeluaran')
+            ->where('is_pinjaman', false)
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->sum('jumlah');
 
@@ -209,6 +220,7 @@ class LaporanController extends Controller
 
         // Get transactions for this period
         $transaksis = Transaksi::whereBetween('tanggal', [$startDate, $endDate])
+            ->where('is_pinjaman', false)
             ->orderBy('tanggal', 'desc')
             ->paginate(10);
 
@@ -233,7 +245,7 @@ class LaporanController extends Controller
         $supplier_id = request('supplier_id');
 
         // Build query
-        $query = Strawberi::with('supplier');
+        $query = Strawberi::with('supplier')->where('is_posted', true);
 
         if ($jenis) {
             $query->where('jenis', $jenis);
@@ -257,21 +269,25 @@ class LaporanController extends Controller
         $strawberis = $query->orderBy('tanggal_masuk', 'desc')->paginate(10);
 
         // Get summary data using raw SQL calculations
-        $stokSegar = Strawberi::where('jenis', 'segar')
+        $stokSegar = Strawberi::where('is_posted', true)
+            ->where('jenis', 'segar')
             ->where('tanggal_kadaluarsa', '>=', now())
             ->selectRaw('SUM(stok_awal - stok_terjual - COALESCE(stok_rusak, 0) + COALESCE(stok_adjustment, 0)) as total')
             ->value('total') ?? 0;
 
-        $stokBeku = Strawberi::where('jenis', 'beku')
+        $stokBeku = Strawberi::where('is_posted', true)
+            ->where('jenis', 'beku')
             ->where('tanggal_kadaluarsa', '>=', now())
             ->selectRaw('SUM(stok_awal - stok_terjual - COALESCE(stok_rusak, 0) + COALESCE(stok_adjustment, 0)) as total')
             ->value('total') ?? 0;
 
-        $stokKadaluarsa = Strawberi::where('tanggal_kadaluarsa', '<', now())
+        $stokKadaluarsa = Strawberi::where('is_posted', true)
+            ->where('tanggal_kadaluarsa', '<', now())
             ->selectRaw('SUM(stok_awal - stok_terjual - COALESCE(stok_rusak, 0) + COALESCE(stok_adjustment, 0)) as total')
             ->value('total') ?? 0;
 
-        $stokHampirKadaluarsa = Strawberi::where('tanggal_kadaluarsa', '>=', now())
+        $stokHampirKadaluarsa = Strawberi::where('is_posted', true)
+            ->where('tanggal_kadaluarsa', '>=', now())
             ->where('tanggal_kadaluarsa', '<=', now()->addDays(7))
             ->selectRaw('SUM(stok_awal - stok_terjual - COALESCE(stok_rusak, 0) + COALESCE(stok_adjustment, 0)) as total')
             ->value('total') ?? 0;
@@ -286,6 +302,7 @@ class LaporanController extends Controller
             jenis, 
             SUM(stok_awal - stok_terjual - COALESCE(stok_rusak, 0) + COALESCE(stok_adjustment, 0)) as total
         ')
+        ->where('is_posted', true)
         ->whereYear('tanggal_masuk', '>=', now()->subYear()->year)
         ->groupBy('tahun', 'bulan', 'jenis')
         ->orderBy('tahun')
@@ -466,6 +483,7 @@ class LaporanController extends Controller
             jenis, 
             SUM(stok_awal - stok_terjual - COALESCE(stok_rusak, 0) + COALESCE(stok_adjustment, 0)) as total
         ')
+        ->where('is_posted', true)
         ->whereYear('tanggal_masuk', '>=', now()->subYear()->year)
         ->groupBy('tahun', 'bulan', 'jenis')
         ->orderBy('tahun')

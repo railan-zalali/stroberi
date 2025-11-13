@@ -45,6 +45,9 @@ Route::middleware(['auth'])->group(function () {
     // Tambahkan route untuk pinjaman baru
     Route::post('/supplier/{supplier}/pinjaman', [SupplierController::class, 'createPinjaman'])->name('supplier.pinjaman');
 
+    // Selesaikan transaksi kredit supplier (posting stok & pembukuan)
+    Route::post('/supplier/{supplier}/selesaikan-transaksi', [SupplierController::class, 'finishTransactions'])->name('supplier.finish');
+
     // Transaksi routes
     Route::resource('transaksi', TransaksiController::class);
 

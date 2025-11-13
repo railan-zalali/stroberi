@@ -28,6 +28,7 @@ class Strawberi extends Model
         'keterangan',
         'adjustment_notes',
         'last_stock_update',
+        'is_posted',
     ];
 
     protected $casts = [
@@ -40,6 +41,7 @@ class Strawberi extends Model
         'tanggal_masuk' => 'date',
         'tanggal_kadaluarsa' => 'date',
         'last_stock_update' => 'datetime',
+        'is_posted' => 'boolean',
     ];
 
     protected static function boot()
