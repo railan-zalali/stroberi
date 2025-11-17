@@ -88,14 +88,11 @@ class SupplierController extends Controller
             ->orderBy('tanggal', 'desc')
             ->paginate(5);
 
-        // Ringkasan sesuai kebutuhan
+        // Ringkasan: tampilkan nilai pembelian pending agar 0 setelah diselesaikan
         $pembayaranKeSupplier = Transaksi::where('supplier_id', $supplier->id)
             ->where('jenis', 'pengeluaran')
             ->where('is_pinjaman', false)
-            ->where(function ($q) {
-                $q->where('kategori', 'like', '%Pembelian Strawberi%')
-                  ->orWhere('kategori', 'like', '%Pembayaran ke Supplier%');
-            })
+            ->where('kategori', 'Pembelian Strawberi (Pending)')
             ->sum('jumlah');
 
         $pinjamanSupplier = Transaksi::where('supplier_id', $supplier->id)
@@ -110,14 +107,16 @@ class SupplierController extends Controller
 
         $sisaPinjaman = $supplier->sisa_pinjaman;
 
-        // Batch pending (belum diposting)
-        $pendingBatches = Strawberi::where('supplier_id', $supplier->id)
-            ->where('is_posted', false)
-            ->orderBy('tanggal_masuk', 'desc')
+        // Pending purchases (belum diposting ke pembukuan)
+        $pendingBatches = Transaksi::where('supplier_id', $supplier->id)
+            ->where('jenis', 'pengeluaran')
+            ->where('is_pinjaman', false)
+            ->where('kategori', 'Pembelian Strawberi (Pending)')
+            ->orderBy('tanggal', 'desc')
             ->get();
 
-        $pendingTotalKg = $pendingBatches->sum('stok_tersisa');
-        $pendingTotalNilai = $pendingBatches->sum(function ($b) { return $b->stok_tersisa * $b->harga_beli; });
+        $pendingTotalKg = 0;
+        $pendingTotalNilai = $pendingBatches->sum('jumlah');
 
         return view('supplier.show', compact(
             'supplier',
@@ -150,26 +149,27 @@ class SupplierController extends Controller
                 ->where('is_posted', false)
                 ->update(['is_posted' => true]);
 
-            // Ubah transaksi pembelian kredit menjadi pembelian (masuk pembukuan) dengan audit keterangan
+            // Ubah transaksi pembelian pending menjadi pembelian (masuk pembukuan) dengan audit keterangan
             $userName = auth()->user() ? auth()->user()->name : 'system';
             $nowText = now()->format('d/m/Y H:i');
 
-            $pinjamanPembelian = Transaksi::where('supplier_id', $supplier->id)
-                ->where('is_pinjaman', true)
-                ->where('kategori', 'Pembelian Strawberi (Kredit)')
+            $pendingPurchases = Transaksi::where('supplier_id', $supplier->id)
+                ->where('jenis', 'pengeluaran')
+                ->where('is_pinjaman', false)
+                ->where('kategori', 'Pembelian Strawberi (Pending)')
                 ->get();
 
-            foreach ($pinjamanPembelian as $tx) {
+            foreach ($pendingPurchases as $tx) {
                 $auditNote = " | Diselesaikan pada {$nowText} oleh {$userName}";
-                $tx->is_pinjaman = false;
                 $tx->tipe_transaksi = 'pembelian';
+                $tx->kategori = 'Pembelian Strawberi';
                 $tx->keterangan = trim(($tx->keterangan ?? '') . $auditNote);
                 $tx->save();
             }
 
             DB::commit();
             return redirect()->route('supplier.show', $supplier)
-                ->with('success', 'Transaksi kredit diselesaikan. Stok masuk ke global dan pembukuan diperbarui.');
+                ->with('success', 'Transaksi pembelian diselesaikan. Stok sudah global dan pembukuan diperbarui.');
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()
@@ -238,7 +238,7 @@ class SupplierController extends Controller
             'keterangan_pengembalian' => 'nullable|string',
             'metode_pengembalian' => 'required|in:tunai,transfer',
         ]);
-    
+
         // Validasi sisa pinjaman
         $sisaPinjaman = $supplier->sisa_pinjaman;
         if ($request->jumlah_pengembalian > $sisaPinjaman) {
@@ -246,27 +246,27 @@ class SupplierController extends Controller
                 ->with('error', "Jumlah pengembalian melebihi sisa pinjaman (Rp " . number_format($sisaPinjaman, 0, ',', '.') . ")")
                 ->withInput();
         }
-    
+
         DB::beginTransaction();
         try {
             // Tentukan kategori berdasarkan metode pengembalian
-            $kategori = $request->metode_pengembalian === 'tunai' 
-                ? 'Pengembalian Pinjaman Supplier (Tunai)' 
+            $kategori = $request->metode_pengembalian === 'tunai'
+                ? 'Pengembalian Pinjaman Supplier (Tunai)'
                 : 'Pengembalian Pinjaman Supplier (Transfer)';
-    
+
             // Buat keterangan yang lebih informatif
             $keterangan = "Pengembalian pinjaman {$request->metode_pengembalian} oleh supplier {$supplier->nama}";
-            
+
             // Tambahkan keterangan tambahan jika ada
             if ($request->keterangan_pengembalian) {
                 $keterangan .= ": {$request->keterangan_pengembalian}";
             }
-    
+
             // Tambahkan informasi pelunasan jika jumlah pengembalian sama dengan sisa pinjaman
             if ($request->jumlah_pengembalian == $sisaPinjaman) {
                 $keterangan .= " (Pelunasan)";
             }
-    
+
             // Buat transaksi pemasukan untuk pengembalian pinjaman supplier
             Transaksi::create([
                 'jenis' => 'pemasukan', // Pemasukan karena uang masuk ke perusahaan dari supplier
@@ -279,18 +279,17 @@ class SupplierController extends Controller
                 'tipe_transaksi' => 'pengembalian',
                 'is_pinjaman' => false,
             ]);
-    
+
             DB::commit();
-    
+
             // Pesan sukses yang lebih informatif
             $pesan = 'Pengembalian pinjaman supplier berhasil dicatat';
             if ($supplier->sisa_pinjaman <= 0) {
                 $pesan .= '. Semua pinjaman telah dilunasi!';
             }
-    
+
             return redirect()->route('supplier.show', $supplier)
                 ->with('success', $pesan);
-    
         } catch (\Exception $e) {
             DB::rollback();
             return redirect()->back()
@@ -307,7 +306,7 @@ class SupplierController extends Controller
             'tanggal_pinjaman' => 'required|date',
             'keterangan_pinjaman' => 'nullable|string',
         ]);
-    
+
         DB::beginTransaction();
         try {
             // Buat transaksi pinjaman
@@ -322,12 +321,11 @@ class SupplierController extends Controller
                 'tipe_transaksi' => 'pinjaman',
                 'is_pinjaman' => true,
             ]);
-    
+
             DB::commit();
-    
+
             return redirect()->route('supplier.show', $supplier)
                 ->with('success', 'Pinjaman untuk supplier berhasil dicatat');
-    
         } catch (\Exception $e) {
             DB::rollback();
             return redirect()->back()

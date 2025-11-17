@@ -26,7 +26,7 @@ class StrawberiController extends Controller
         if ($request->filled('jenis')) {
             $query->where('jenis', $request->jenis);
         }
-        
+
         // Filter berdasarkan grade
         if ($request->filled('grade')) {
             $query->where('grade', $request->grade);
@@ -44,6 +44,19 @@ class StrawberiController extends Controller
             }
         }
 
+        // Pencarian teks bebas
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('keterangan', 'like', "%{$search}%")
+                    ->orWhere('batch_number', 'like', "%{$search}%")
+                    ->orWhere('jenis', 'like', "%{$search}%")
+                    ->orWhere('grade', 'like', "%{$search}%");
+            })->orWhereHas('supplier', function ($qs) use ($search) {
+                $qs->where('nama', 'like', "%{$search}%");
+            });
+        }
+
         $strawberis = $query->paginate(10)->withQueryString();
 
         // Hitung total stok berdasarkan jenis dan grade
@@ -53,12 +66,12 @@ class StrawberiController extends Controller
         $stokBekuA = $this->hitungStokBerdasarkanJenisGrade('beku', 'a');
         $stokBekuB = $this->hitungStokBerdasarkanJenisGrade('beku', 'b');
         $stokBekuC = $this->hitungStokBerdasarkanJenisGrade('beku', 'c');
-        
+
         // Total stok berdasarkan grade (semua jenis)
         $stokGradeA = $stokSegarA + $stokBekuA;
         $stokGradeB = $stokSegarB + $stokBekuB;
         $stokGradeC = $stokSegarC + $stokBekuC;
-        
+
         // Total stok segar dan beku (semua grade)
         $stokSegar = $stokSegarA + $stokSegarB + $stokSegarC;
         $stokBeku = $stokBekuA + $stokBekuB + $stokBekuC;
@@ -75,14 +88,6 @@ class StrawberiController extends Controller
         // Ambil daftar supplier untuk filter
         $suppliers = Supplier::where('status', 'aktif')->orderBy('nama')->get();
 
-        // Hitung nilai stok berdasarkan harga beli
-        $nilaiStok = Strawberi::where('is_posted', true)
-            ->where('tanggal_kadaluarsa', '>=', now())
-            ->get()
-            ->sum(function ($strawberi) {
-                return $strawberi->stok_tersisa * $strawberi->harga_beli;
-            });
-            
         return view('strawberi.index', compact(
             'strawberis',
             'stokSegar',
@@ -97,7 +102,6 @@ class StrawberiController extends Controller
             'stokGradeB',
             'stokGradeC',
             'kadaluarsa',
-            'nilaiStok',
             'suppliers'
         ));
     }
@@ -126,7 +130,7 @@ class StrawberiController extends Controller
 
         DB::beginTransaction();
         try {
-            // Simpan data strawberi sebagai pending (belum masuk stok global)
+            // Simpan data strawberi dan langsung posting ke stok global
             $strawberi = Strawberi::create([
                 'jenis' => $request->jenis,
                 'grade' => $request->grade,
@@ -137,31 +141,30 @@ class StrawberiController extends Controller
                 'tanggal_masuk' => $request->tanggal_masuk,
                 'supplier_id' => $request->supplier_id,
                 'keterangan' => $request->keterangan,
-                'is_posted' => false,
+                'is_posted' => true,
             ]);
 
             $supplier = $request->supplier_id ? Supplier::find($request->supplier_id) : null;
             $totalHarga = $request->harga_beli * $request->jumlah;
-            
-            // Default: pembayaran kredit (pinjaman), tidak masuk pembukuan sampai selesai
+
+            // Catat pembelian sebagai pending agar tidak muncul di pembukuan sebelum diselesaikan
             Transaksi::create([
                 'jenis' => 'pengeluaran',
                 'jumlah' => $totalHarga,
                 'tanggal' => $request->tanggal_masuk,
-                'kategori' => 'Pembelian Strawberi (Kredit)',
-                'keterangan' => "Pembelian kredit {$request->jumlah} kg strawberi {$request->jenis} grade {$request->grade}" . ($supplier ? " dari {$supplier->nama}" : ''),
+                'kategori' => 'Pembelian Strawberi (Pending)',
+                'keterangan' => "Pembelian {$request->jumlah} kg strawberi {$request->jenis} grade {$request->grade}" . ($supplier ? " dari {$supplier->nama}" : ''),
                 'user_id' => Auth::id(),
                 'supplier_id' => $supplier ? $supplier->id : null,
                 'supplier_name' => $supplier ? $supplier->nama : null,
-                'tipe_transaksi' => 'pinjaman',
-                'is_pinjaman' => true,
+                'tipe_transaksi' => 'pembelian',
+                'is_pinjaman' => false,
             ]);
 
             DB::commit();
 
             return redirect()->route('strawberi.index')
-                ->with('success', 'Stok strawberi berhasil ditambahkan');
-
+                ->with('success', 'Stok strawberi berhasil ditambahkan dan diposting ke stok global');
         } catch (\Exception $e) {
             DB::rollback();
             return redirect()->back()
@@ -342,7 +345,6 @@ class StrawberiController extends Controller
             }
 
             return redirect()->route('strawberi.index')->with('success', $msg);
-
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()
@@ -406,7 +408,6 @@ class StrawberiController extends Controller
 
             return redirect()->route('strawberi.show', $strawberi)
                 ->with('success', 'Penjualan strawberi berhasil dicatat');
-
         } catch (\Exception $e) {
             DB::rollback();
             return redirect()->back()
@@ -427,7 +428,7 @@ class StrawberiController extends Controller
 
         return response()->json($movements);
     }
-    
+
     /**
      * Hitung stok berdasarkan jenis dan grade
      *

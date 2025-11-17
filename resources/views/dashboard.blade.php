@@ -98,7 +98,8 @@
                                             <div class="flex justify-between items-center">
                                                 <span>{{ number_format($strawberi->jumlah, 2) }} kg
                                                     {{ ucfirst($strawberi->jenis) }}</span>
-                                                <span class="font-medium {{ $strawberi->is_expired ? 'text-red-700' : 'text-red-600' }}">
+                                                <span
+                                                    class="font-medium {{ $strawberi->is_expired ? 'text-red-700' : 'text-red-600' }}">
                                                     {{ $strawberi->days_remaining_text }}
                                                 </span>
                                             </div>
@@ -254,7 +255,7 @@
                         </a>
                     </div>
 
-                    <div class="mt-4">
+                    {{-- <div class="mt-4">
                         <h3 class="text-lg font-medium text-gray-900 mb-2">Ekspor Data Cepat</h3>
                         <div class="flex flex-wrap gap-2">
                             <a href="{{ route('transaksi.export.month', [date('Y'), date('m')]) }}"
@@ -276,7 +277,7 @@
                                 Ekspor Tahun Ini
                             </a>
                         </div>
-                    </div>
+                    </div> --}}
                 </div>
             </div>
         </div>

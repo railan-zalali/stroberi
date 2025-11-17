@@ -64,7 +64,7 @@ class TransaksiController extends Controller
     {
         // Ambil supplier_name dari query parameter jika ada
         $supplierName = $request->query('supplier_name');
-        
+
         return view('transaksi.create', compact('supplierName'));
     }
 
@@ -87,7 +87,7 @@ class TransaksiController extends Controller
         if (empty($kategori)) {
             $kategori = $request->jenis == 'pemasukan' ? 'Penjualan' : 'Operasional';
         }
-        
+
         // Validasi khusus pinjaman: butuh nama supplier
         if (($request->is_pinjaman || $request->tipe_transaksi == 'pinjaman') && empty($request->supplier_name)) {
             return redirect()->back()
@@ -150,7 +150,7 @@ class TransaksiController extends Controller
             'supplier_name' => 'nullable|string|max:255',
             'bukti_pembayaran' => 'nullable|file|mimes:jpeg,jpg,png,pdf|max:2048',
         ]);
-        
+
         // Validasi khusus pinjaman: butuh nama supplier
         if (($request->is_pinjaman || $request->tipe_transaksi == 'pinjaman') && empty($request->supplier_name)) {
             return redirect()->back()
@@ -213,33 +213,6 @@ class TransaksiController extends Controller
         return Excel::download(new TransaksiExport($tanggalMulai, $tanggalAkhir, $jenis, $kategori), $fileName);
     }
 
-    /**
-     * Export transaksi to CSV.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
-     */
-    public function exportCsv(Request $request)
-    {
-        $tanggalMulai = $request->tanggal_mulai ?? Carbon::now()->startOfMonth()->format('Y-m-d');
-        $tanggalAkhir = $request->tanggal_akhir ?? Carbon::now()->endOfMonth()->format('Y-m-d');
-        $jenis = $request->jenis;
-        $kategori = $request->kategori;
-
-        $fileName = 'transaksi_';
-
-        if ($jenis) {
-            $fileName .= strtolower($jenis) . '_';
-        }
-
-        if ($kategori) {
-            $fileName .= strtolower(str_replace(' ', '_', $kategori)) . '_';
-        }
-
-        $fileName .= Carbon::parse($tanggalMulai)->format('d-m-Y') . '_sampai_' . Carbon::parse($tanggalAkhir)->format('d-m-Y') . '.csv';
-
-        return Excel::download(new TransaksiExport($tanggalMulai, $tanggalAkhir, $jenis, $kategori), $fileName, \Maatwebsite\Excel\Excel::CSV);
-    }
 
     /**
      * Export transaksi to PDF.
@@ -254,51 +227,33 @@ class TransaksiController extends Controller
         $jenis = $request->jenis;
         $kategori = $request->kategori;
 
-        $fileName = 'transaksi_';
+        $query = Transaksi::with('user')
+            ->whereBetween('tanggal', [$tanggalMulai, $tanggalAkhir]);
 
-        if ($jenis) {
-            $fileName .= strtolower($jenis) . '_';
+        if (!empty($jenis)) {
+            $query->where('jenis', $jenis);
         }
 
-        if ($kategori) {
-            $fileName .= strtolower(str_replace(' ', '_', $kategori)) . '_';
+        if (!empty($kategori)) {
+            $query->where('kategori', $kategori);
         }
 
-        $fileName .= Carbon::parse($tanggalMulai)->format('d-m-Y') . '_sampai_' . Carbon::parse($tanggalAkhir)->format('d-m-Y') . '.pdf';
+        $transaksis = $query->orderBy('tanggal', 'asc')
+            ->orderBy('created_at', 'asc')
+            ->get();
 
-        return Excel::download(new TransaksiExport($tanggalMulai, $tanggalAkhir, $jenis, $kategori), $fileName, \Maatwebsite\Excel\Excel::DOMPDF);
+        $fileName = 'transaksi_' . Carbon::parse($tanggalMulai)->format('d-m-Y') . '_sampai_' . Carbon::parse($tanggalAkhir)->format('d-m-Y') . '.pdf';
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('transaksi.pdf', [
+            'transaksis' => $transaksis,
+            'tanggalMulai' => $tanggalMulai,
+            'tanggalAkhir' => $tanggalAkhir,
+            'jenis' => $jenis,
+            'kategori' => $kategori,
+        ]);
+
+        return $pdf->download($fileName);
     }
 
-    /**
-     * Export transaksi for specific month.
-     *
-     * @param  int  $year
-     * @param  int  $month
-     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
-     */
-    public function exportMonth($year, $month)
-    {
-        $tanggalMulai = Carbon::create($year, $month, 1)->format('Y-m-d');
-        $tanggalAkhir = Carbon::create($year, $month, 1)->endOfMonth()->format('Y-m-d');
 
-        $fileName = "transaksi_{$year}_{$month}.xlsx";
-
-        return Excel::download(new TransaksiExport($tanggalMulai, $tanggalAkhir, null, null), $fileName);
-    }
-
-    /**
-     * Export transaksi for specific year.
-     *
-     * @param  int  $year
-     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
-     */
-    public function exportYear($year)
-    {
-        $tanggalMulai = Carbon::create($year, 1, 1)->format('Y-m-d');
-        $tanggalAkhir = Carbon::create($year, 12, 31)->format('Y-m-d');
-
-        $fileName = "transaksi_{$year}.xlsx";
-
-        return Excel::download(new TransaksiExport($tanggalMulai, $tanggalAkhir, null, null), $fileName);
-    }
 }

@@ -32,7 +32,7 @@ Route::middleware(['auth'])->group(function () {
     // Penjualan global (stok gabungan) - definisikan sebelum resource agar tidak tertangkap oleh wildcard {strawberi}
     Route::get('/strawberi/sell-global', [StrawberiController::class, 'sellGlobalForm'])->name('strawberi.sell-global.form');
     Route::post('/strawberi/sell-global', [StrawberiController::class, 'sellGlobalStore'])->name('strawberi.sell-global.store');
-    
+
     // Resource dan aksi jual per item
     Route::resource('strawberi', StrawberiController::class);
     Route::post('/strawberi/{strawberi}/sell', [StrawberiController::class, 'sell'])->name('strawberi.sell');
@@ -41,22 +41,21 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('supplier', SupplierController::class);
     // Ubah route pembayaran menjadi pengembalian
     Route::post('/supplier/{supplier}/pengembalian', [SupplierController::class, 'updatePengembalian'])->name('supplier.pengembalian');
-    
+
     // Tambahkan route untuk pinjaman baru
     Route::post('/supplier/{supplier}/pinjaman', [SupplierController::class, 'createPinjaman'])->name('supplier.pinjaman');
 
     // Selesaikan transaksi kredit supplier (posting stok & pembukuan)
     Route::post('/supplier/{supplier}/selesaikan-transaksi', [SupplierController::class, 'finishTransactions'])->name('supplier.finish');
 
-    // Transaksi routes
-    Route::resource('transaksi', TransaksiController::class);
-
-    // Export routes
+    // Export routes (only Excel and PDF) — place BEFORE resource to avoid wildcard collision
+    Route::get('/transaksi/export', [TransaksiController::class, 'export'])->name('transaksi.export');
+    Route::get('/transaksi/export/pdf', [TransaksiController::class, 'exportPdf'])->name('transaksi.export.pdf');
     Route::get('/transaksi/export/month/{year}/{month}', [TransaksiController::class, 'exportMonth'])->name('transaksi.export.month');
     Route::get('/transaksi/export/year/{year}', [TransaksiController::class, 'exportYear'])->name('transaksi.export.year');
-    Route::get('/transaksi/export', [TransaksiController::class, 'export'])->name('transaksi.export');
-    Route::get('/transaksi/export/csv', [TransaksiController::class, 'exportCsv'])->name('transaksi.export.csv');
-    Route::get('/transaksi/export/pdf', [TransaksiController::class, 'exportPdf'])->name('transaksi.export.pdf');
+
+    // Transaksi routes
+    Route::resource('transaksi', TransaksiController::class);
 
     // Laporan routes
     Route::get('/laporan/keuangan', [LaporanController::class, 'keuangan'])->name('laporan.keuangan');

@@ -196,10 +196,6 @@
                                     </th>
                                     <th scope="col"
                                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Harga Jual
-                                    </th>
-                                    <th scope="col"
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Supplier
                                     </th>
                                     <th scope="col"
@@ -281,10 +277,6 @@
                                                 {{ number_format($strawberi->harga_beli, 0, ',', '.') }}</div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="text-sm text-gray-900">Rp
-                                                {{ number_format($strawberi->harga_jual, 0, ',', '.') }}</div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="text-sm text-gray-900">{{ $strawberi->supplier->nama ?? '-' }}
                                             </div>
                                         </td>
@@ -314,8 +306,9 @@
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             {{ number_format($strawberi->stok_adjustment, 2) }} kg
-                                            @if($strawberi->adjustment_notes)
-                                                <span class="text-xs text-gray-500 block">{{ $strawberi->adjustment_notes }}</span>
+                                            @if ($strawberi->adjustment_notes)
+                                                <span
+                                                    class="text-xs text-gray-500 block">{{ $strawberi->adjustment_notes }}</span>
                                             @endif
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
@@ -362,7 +355,8 @@
                             <button @click="open = false" class="text-gray-400 hover:text-gray-500">
                                 <span class="sr-only">Close</span>
                                 <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                             </button>
                         </div>
@@ -371,12 +365,24 @@
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">
                                     <tr>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipe</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stok Sebelum</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stok Setelah</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Catatan</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Tanggal</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Tipe</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Jumlah</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Stok Sebelum</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Stok Setelah</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Catatan</th>
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200" id="stockMovementHistory">
@@ -468,7 +474,7 @@
                     .then(data => {
                         const tbody = document.getElementById('stockMovementHistory');
                         tbody.innerHTML = '';
-                        
+
                         data.forEach(movement => {
                             const row = document.createElement('tr');
                             row.innerHTML = `
@@ -481,7 +487,7 @@
                             `;
                             tbody.appendChild(row);
                         });
-                        
+
                         // Open modal
                         document.querySelector('[x-ref="modalTrigger"]').click();
                     })

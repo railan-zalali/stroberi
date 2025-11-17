@@ -297,20 +297,20 @@ class LaporanController extends Controller
 
         // Get monthly stok data for chart
         $monthlyStokData = Strawberi::selectRaw('
-            YEAR(tanggal_masuk) as tahun, 
-            MONTH(tanggal_masuk) as bulan, 
-            jenis, 
+            YEAR(tanggal_masuk) as tahun,
+            MONTH(tanggal_masuk) as bulan,
+            jenis,
             SUM(stok_awal - stok_terjual - COALESCE(stok_rusak, 0) + COALESCE(stok_adjustment, 0)) as total
         ')
-        ->where('is_posted', true)
-        ->whereYear('tanggal_masuk', '>=', now()->subYear()->year)
-        ->groupBy('tahun', 'bulan', 'jenis')
-        ->orderBy('tahun')
-        ->orderBy('bulan')
-        ->get()
-        ->groupBy(function ($item) {
-            return Carbon::createFromDate($item->tahun, $item->bulan, 1)->format('Y-m');
-        });
+            ->where('is_posted', true)
+            ->whereYear('tanggal_masuk', '>=', now()->subYear()->year)
+            ->groupBy('tahun', 'bulan', 'jenis')
+            ->orderBy('tahun')
+            ->orderBy('bulan')
+            ->get()
+            ->groupBy(function ($item) {
+                return Carbon::createFromDate($item->tahun, $item->bulan, 1)->format('Y-m');
+            });
 
         // Format data for chart
         $stokChart = $this->formatStokData($monthlyStokData);
@@ -478,20 +478,20 @@ class LaporanController extends Controller
 
         // Get monthly stok data for chart
         $monthlyStokData = Strawberi::selectRaw('
-            YEAR(tanggal_masuk) as tahun, 
-            MONTH(tanggal_masuk) as bulan, 
-            jenis, 
+            YEAR(tanggal_masuk) as tahun,
+            MONTH(tanggal_masuk) as bulan,
+            jenis,
             SUM(stok_awal - stok_terjual - COALESCE(stok_rusak, 0) + COALESCE(stok_adjustment, 0)) as total
         ')
-        ->where('is_posted', true)
-        ->whereYear('tanggal_masuk', '>=', now()->subYear()->year)
-        ->groupBy('tahun', 'bulan', 'jenis')
-        ->orderBy('tahun')
-        ->orderBy('bulan')
-        ->get()
-        ->groupBy(function ($item) {
-            return Carbon::createFromDate($item->tahun, $item->bulan, 1)->format('Y-m');
-        });
+            ->where('is_posted', true)
+            ->whereYear('tanggal_masuk', '>=', now()->subYear()->year)
+            ->groupBy('tahun', 'bulan', 'jenis')
+            ->orderBy('tahun')
+            ->orderBy('bulan')
+            ->get()
+            ->groupBy(function ($item) {
+                return Carbon::createFromDate($item->tahun, $item->bulan, 1)->format('Y-m');
+            });
 
         foreach ($monthlyStokData as $month => $data) {
             $segar = $data->where('jenis', 'segar')->sum('total');

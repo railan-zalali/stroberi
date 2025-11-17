@@ -55,13 +55,13 @@ class Transaksi extends Model
     public function scopePinjamanSupplier($query)
     {
         return $query->where('is_pinjaman', true)
-                     ->where('jenis', 'pengeluaran'); // Pengeluaran karena uang keluar dari perusahaan ke supplier
+            ->where('jenis', 'pengeluaran'); // Pengeluaran karena uang keluar dari perusahaan ke supplier
     }
 
     // Scope untuk transaksi pengembalian pinjaman dari supplier
     public function scopePengembalianPinjaman($query)
     {
         return $query->where('tipe_transaksi', 'pengembalian')
-                     ->where('jenis', 'pemasukan'); // Pemasukan karena uang masuk ke perusahaan dari supplier
+            ->where('jenis', 'pemasukan'); // Pemasukan karena uang masuk ke perusahaan dari supplier
     }
 }

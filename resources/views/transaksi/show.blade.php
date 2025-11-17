@@ -86,25 +86,27 @@
                                     <p class="text-lg font-semibold text-gray-800">{{ $transaksi->kategori ?? '-' }}</p>
                                 </div>
 
-                                @if($transaksi->supplier_name)
-                                <div>
-                                    <p class="text-sm text-gray-500">Supplier/Pembeli</p>
-                                    <p class="text-lg font-semibold text-gray-800">{{ $transaksi->supplier_name }}</p>
-                                </div>
+                                @if ($transaksi->supplier_name)
+                                    <div>
+                                        <p class="text-sm text-gray-500">Supplier/Pembeli</p>
+                                        <p class="text-lg font-semibold text-gray-800">{{ $transaksi->supplier_name }}
+                                        </p>
+                                    </div>
                                 @endif
 
-                                @if($transaksi->tipe_transaksi)
-                                <div>
-                                    <p class="text-sm text-gray-500">Tipe Transaksi</p>
-                                    <p class="text-lg font-semibold">
-                                        <span class="px-2 py-1 rounded-full text-sm {{ $transaksi->is_pinjaman ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800' }}">
-                                            {{ ucfirst($transaksi->tipe_transaksi) }}
-                                            @if($transaksi->is_pinjaman)
-                                            (Pinjaman)
-                                            @endif
-                                        </span>
-                                    </p>
-                                </div>
+                                @if ($transaksi->tipe_transaksi)
+                                    <div>
+                                        <p class="text-sm text-gray-500">Tipe Transaksi</p>
+                                        <p class="text-lg font-semibold">
+                                            <span
+                                                class="px-2 py-1 rounded-full text-sm {{ $transaksi->is_pinjaman ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800' }}">
+                                                {{ ucfirst($transaksi->tipe_transaksi) }}
+                                                @if ($transaksi->is_pinjaman)
+                                                    (Pinjaman)
+                                                @endif
+                                            </span>
+                                        </p>
+                                    </div>
                                 @endif
 
                                 <div>
@@ -118,30 +120,32 @@
                                     </p>
                                 </div>
 
-                                @if($transaksi->bukti_pembayaran)
-                                <div class="col-span-2">
-                                    <p class="text-sm text-gray-500">Bukti Pembayaran</p>
-                                    <div class="mt-2">
-                                        @php
-                                            $extension = pathinfo($transaksi->bukti_pembayaran, PATHINFO_EXTENSION);
-                                        @endphp
-                                        
-                                        @if(in_array(strtolower($extension), ['jpg', 'jpeg', 'png']))
-                                            <img src="{{ Storage::url($transaksi->bukti_pembayaran) }}" 
-                                                 alt="Bukti Pembayaran" 
-                                                 class="max-w-xs h-auto rounded-lg shadow-md">
-                                        @else
-                                            <a href="{{ Storage::url($transaksi->bukti_pembayaran) }}" 
-                                               target="_blank"
-                                               class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                </svg>
-                                                Lihat Bukti Pembayaran ({{ strtoupper($extension) }})
-                                            </a>
-                                        @endif
+                                @if ($transaksi->bukti_pembayaran)
+                                    <div class="col-span-2">
+                                        <p class="text-sm text-gray-500">Bukti Pembayaran</p>
+                                        <div class="mt-2">
+                                            @php
+                                                $extension = pathinfo($transaksi->bukti_pembayaran, PATHINFO_EXTENSION);
+                                            @endphp
+
+                                            @if (in_array(strtolower($extension), ['jpg', 'jpeg', 'png']))
+                                                <img src="{{ Storage::url($transaksi->bukti_pembayaran) }}"
+                                                    alt="Bukti Pembayaran" class="max-w-xs h-auto rounded-lg shadow-md">
+                                            @else
+                                                <a href="{{ Storage::url($transaksi->bukti_pembayaran) }}"
+                                                    target="_blank"
+                                                    class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2"
+                                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                    </svg>
+                                                    Lihat Bukti Pembayaran ({{ strtoupper($extension) }})
+                                                </a>
+                                            @endif
+                                        </div>
                                     </div>
-                                </div>
                                 @endif
                             </div>
                         </div>
@@ -248,13 +252,13 @@
                                                 {{ $terkait->kategori ?? '-' }}
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap">
-                                                @if($terkait->tipe_transaksi)
-                                                <span
-                                                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $terkait->is_pinjaman ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800' }}">
-                                                    {{ ucfirst($terkait->tipe_transaksi) }}
-                                                </span>
+                                                @if ($terkait->tipe_transaksi)
+                                                    <span
+                                                        class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $terkait->is_pinjaman ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800' }}">
+                                                        {{ ucfirst($terkait->tipe_transaksi) }}
+                                                    </span>
                                                 @else
-                                                <span class="text-gray-400">-</span>
+                                                    <span class="text-gray-400">-</span>
                                                 @endif
                                             </td>
                                             <td

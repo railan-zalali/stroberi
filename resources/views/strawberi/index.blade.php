@@ -7,15 +7,19 @@
             <div class="flex items-center space-x-2">
                 <a href="{{ route('strawberi.sell-global.form') }}"
                     class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-800 focus:outline-none focus:border-indigo-800 focus:ring ring-indigo-300 disabled:opacity-25 transition ease-in-out duration-150">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.35 2.7a1 1 0 00.9 1.3H17m-10 0a1 1 0 101 1 1 1 0 00-1-1zm10 0a1 1 0 101 1 1 1 0 00-1-1z" />
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.35 2.7a1 1 0 00.9 1.3H17m-10 0a1 1 0 101 1 1 1 0 00-1-1zm10 0a1 1 0 101 1 1 1 0 00-1-1z" />
                     </svg>
                     {{ __('Jual Global') }}
                 </a>
                 <a href="{{ route('strawberi.create') }}"
                     class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 active:bg-red-800 focus:outline-none focus:border-red-800 focus:ring ring-red-300 disabled:opacity-25 transition ease-in-out duration-150">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
                     {{ __('Tambah Stok') }}
                 </a>
@@ -46,7 +50,7 @@
                                     <p class="text-xl font-bold text-gray-700">{{ $stokSegar ?? 0 }} kg</p>
                                 </div>
                             </div>
-                            
+
                             <!-- Stok Beku -->
                             <div class="flex items-center">
                                 <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
@@ -80,7 +84,7 @@
                                     <p class="text-xl font-bold text-gray-700">{{ $stokGradeA ?? 0 }} kg</p>
                                 </div>
                             </div>
-                            
+
                             <!-- Grade B -->
                             <div class="flex items-center">
                                 <div class="p-3 rounded-full bg-yellow-100 text-yellow-600 mr-4">
@@ -91,7 +95,7 @@
                                     <p class="text-xl font-bold text-gray-700">{{ $stokGradeB ?? 0 }} kg</p>
                                 </div>
                             </div>
-                            
+
                             <!-- Grade C -->
                             <div class="flex items-center">
                                 <div class="p-3 rounded-full bg-red-100 text-red-600 mr-4">
@@ -111,22 +115,7 @@
                     <div class="p-6 border-b border-gray-200">
                         <h3 class="text-lg font-medium text-gray-900 mb-3">Informasi Tambahan</h3>
                         <div class="space-y-4">
-                            <!-- Nilai Stok -->
-                            <div class="flex items-center">
-                                <div class="p-3 rounded-full bg-yellow-100 text-yellow-600 mr-4">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
-                                        viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <p class="text-gray-500 text-sm">Nilai Stok</p>
-                                    <p class="text-xl font-bold text-gray-700">Rp
-                                        {{ number_format($nilaiStok ?? 0, 0, ',', '.') }}</p>
-                                </div>
-                            </div>
-                            
+
                             <!-- Hampir Kadaluarsa -->
                             <div class="flex items-center">
                                 <div class="p-3 rounded-full bg-red-100 text-red-600 mr-4">
@@ -141,7 +130,7 @@
                                     <p class="text-xl font-bold text-gray-700">{{ $kadaluarsa ?? 0 }} kg</p>
                                 </div>
                             </div>
-                            
+
                             <!-- Total Stok -->
                             <div class="flex items-center">
                                 <div class="p-3 rounded-full bg-indigo-100 text-indigo-600 mr-4">
@@ -153,7 +142,8 @@
                                 </div>
                                 <div>
                                     <p class="text-gray-500 text-sm">Total Stok</p>
-                                    <p class="text-xl font-bold text-gray-700">{{ ($stokSegar ?? 0) + ($stokBeku ?? 0) }} kg</p>
+                                    <p class="text-xl font-bold text-gray-700">
+                                        {{ ($stokSegar ?? 0) + ($stokBeku ?? 0) }} kg</p>
                                 </div>
                             </div>
                         </div>
@@ -173,7 +163,8 @@
                                 <option value="">Semua</option>
                                 <option value="segar" {{ request('jenis') == 'segar' ? 'selected' : '' }}>Segar
                                 </option>
-                                <option value="beku" {{ request('jenis') == 'beku' ? 'selected' : '' }}>Beku</option>
+                                <option value="beku" {{ request('jenis') == 'beku' ? 'selected' : '' }}>Beku
+                                </option>
                             </select>
                         </div>
 
@@ -182,9 +173,12 @@
                             <select id="grade" name="grade"
                                 class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm">
                                 <option value="">Semua</option>
-                                <option value="a" {{ request('grade') == 'a' ? 'selected' : '' }}>Grade A</option>
-                                <option value="b" {{ request('grade') == 'b' ? 'selected' : '' }}>Grade B</option>
-                                <option value="c" {{ request('grade') == 'c' ? 'selected' : '' }}>Grade C</option>
+                                <option value="a" {{ request('grade') == 'a' ? 'selected' : '' }}>Grade A
+                                </option>
+                                <option value="b" {{ request('grade') == 'b' ? 'selected' : '' }}>Grade B
+                                </option>
+                                <option value="c" {{ request('grade') == 'c' ? 'selected' : '' }}>Grade C
+                                </option>
                             </select>
                         </div>
 
@@ -306,9 +300,11 @@
                                                     'b' => 'bg-yellow-100 text-yellow-800',
                                                     'c' => 'bg-red-100 text-red-800',
                                                 ];
-                                                $gradeColor = $gradeColors[$strawberi->grade] ?? 'bg-gray-100 text-gray-800';
+                                                $gradeColor =
+                                                    $gradeColors[$strawberi->grade] ?? 'bg-gray-100 text-gray-800';
                                             @endphp
-                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $gradeColor }}">
+                                            <span
+                                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $gradeColor }}">
                                                 {{ strtoupper($strawberi->grade ?? '-') }}
                                             </span>
                                         </td>
@@ -329,20 +325,21 @@
                                                 {{ $strawberi->tanggal_masuk->format('d/m/Y') }}</div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            @php
+                                            {{-- @php
                                                 $sisaHari = $strawberi->sisa_hari_kadaluarsa;
                                                 $badgeColor = 'bg-green-100 text-green-800';
-                                                
+
                                                 if ($sisaHari < 0) {
                                                     $badgeColor = 'bg-red-100 text-red-800';
                                                 } elseif ($sisaHari <= 7) {
                                                     $badgeColor = 'bg-yellow-100 text-yellow-800';
                                                 }
-                                            @endphp
+                                            @endphp --}}
                                             <div class="flex flex-col space-y-1">
-                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $badgeColor }}">
+                                                {{-- <span
+                                                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full">
                                                     {{ $strawberi->text_kadaluarsa }}
-                                                </span>
+                                                </span> --}}
                                                 <span class="text-xs text-gray-500">
                                                     {{ $strawberi->tanggal_kadaluarsa->format('d/m/Y') }}
                                                 </span>
@@ -361,7 +358,7 @@
                                                             d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                                     </svg>
                                                 </a>
-                                                <a href="{{ route('strawberi.edit', $strawberi) }}"
+                                                {{-- <a href="{{ route('strawberi.edit', $strawberi) }}"
                                                     class="text-indigo-600 hover:text-indigo-900">
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
                                                         fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -369,7 +366,7 @@
                                                             stroke-width="2"
                                                             d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                                     </svg>
-                                                </a>
+                                                </a> --}}
                                                 <form action="{{ route('strawberi.destroy', $strawberi) }}"
                                                     method="POST" class="inline"
                                                     onsubmit="return confirm('Apakah Anda yakin ingin menghapus data ini?');">
