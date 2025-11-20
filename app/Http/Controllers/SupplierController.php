@@ -139,16 +139,11 @@ class SupplierController extends Controller
         return view('supplier.edit', compact('supplier'));
     }
 
-    // Selesaikan transaksi kredit: posting stok dan pindahkan pinjaman ke pembukuan
+    // Selesaikan transaksi kredit: pindahkan pembelian pending ke pembukuan
     public function finishTransactions(Supplier $supplier)
     {
         DB::beginTransaction();
         try {
-            // Posting semua batch strawberi pending
-            Strawberi::where('supplier_id', $supplier->id)
-                ->where('is_posted', false)
-                ->update(['is_posted' => true]);
-
             // Ubah transaksi pembelian pending menjadi pembelian (masuk pembukuan) dengan audit keterangan
             $userName = auth()->user() ? auth()->user()->name : 'system';
             $nowText = now()->format('d/m/Y H:i');
@@ -169,7 +164,7 @@ class SupplierController extends Controller
 
             DB::commit();
             return redirect()->route('supplier.show', $supplier)
-                ->with('success', 'Transaksi pembelian diselesaikan. Stok sudah global dan pembukuan diperbarui.');
+                ->with('success', 'Transaksi pembelian diselesaikan. Pembukuan diperbarui.');
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()

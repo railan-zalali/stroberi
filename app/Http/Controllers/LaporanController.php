@@ -53,11 +53,13 @@ class LaporanController extends Controller
         // Calculate totals
         $totalPemasukan = Transaksi::where('jenis', 'pemasukan')
             ->where('is_pinjaman', false)
+            ->where('kategori', '!=', 'Pembelian Strawberi (Pending)')
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->sum('jumlah');
 
         $totalPengeluaran = Transaksi::where('jenis', 'pengeluaran')
             ->where('is_pinjaman', false)
+            ->where('kategori', '!=', 'Pembelian Strawberi (Pending)')
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->sum('jumlah');
 
@@ -66,6 +68,7 @@ class LaporanController extends Controller
         // Generate PDF report
         $transaksis = Transaksi::whereBetween('tanggal', [$startDate, $endDate])
             ->where('is_pinjaman', false)
+            ->where('kategori', '!=', 'Pembelian Strawberi (Pending)')
             ->orderBy('tanggal', 'asc')
             ->get();
 
@@ -118,6 +121,7 @@ class LaporanController extends Controller
         // Get category totals for pie chart
         $pemasukanKategori = Transaksi::where('jenis', 'pemasukan')
             ->where('is_pinjaman', false)
+            ->where('kategori', '!=', 'Pembelian Strawberi (Pending)')
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->selectRaw('kategori, sum(jumlah) as total')
             ->groupBy('kategori')
@@ -125,6 +129,7 @@ class LaporanController extends Controller
 
         $pengeluaranKategori = Transaksi::where('jenis', 'pengeluaran')
             ->where('is_pinjaman', false)
+            ->where('kategori', '!=', 'Pembelian Strawberi (Pending)')
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->selectRaw('kategori, sum(jumlah) as total')
             ->groupBy('kategori')
@@ -133,6 +138,7 @@ class LaporanController extends Controller
         // Get daily totals for line chart
         $dailyData = Transaksi::whereBetween('tanggal', [$startDate, $endDate])
             ->where('is_pinjaman', false)
+            ->where('kategori', '!=', 'Pembelian Strawberi (Pending)')
             ->selectRaw('tanggal, jenis, sum(jumlah) as total')
             ->groupBy('tanggal', 'jenis')
             ->get()
@@ -182,6 +188,7 @@ class LaporanController extends Controller
         // Get monthly data for the current year
         $bulananData = Transaksi::whereYear('tanggal', $tahun)
             ->where('is_pinjaman', false)
+            ->where('kategori', '!=', 'Pembelian Strawberi (Pending)')
             ->selectRaw('MONTH(tanggal) as bulan, jenis, sum(jumlah) as total')
             ->groupBy('bulan', 'jenis')
             ->get()
@@ -193,6 +200,7 @@ class LaporanController extends Controller
         // Get category totals for the selected month
         $pemasukanKategori = Transaksi::where('jenis', 'pemasukan')
             ->where('is_pinjaman', false)
+            ->where('kategori', '!=', 'Pembelian Strawberi (Pending)')
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->selectRaw('kategori, sum(jumlah) as total')
             ->groupBy('kategori')
@@ -200,6 +208,7 @@ class LaporanController extends Controller
 
         $pengeluaranKategori = Transaksi::where('jenis', 'pengeluaran')
             ->where('is_pinjaman', false)
+            ->where('kategori', '!=', 'Pembelian Strawberi (Pending)')
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->selectRaw('kategori, sum(jumlah) as total')
             ->groupBy('kategori')
@@ -208,11 +217,13 @@ class LaporanController extends Controller
         // Get summary data for the selected month
         $totalPemasukan = Transaksi::where('jenis', 'pemasukan')
             ->where('is_pinjaman', false)
+            ->where('kategori', '!=', 'Pembelian Strawberi (Pending)')
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->sum('jumlah');
 
         $totalPengeluaran = Transaksi::where('jenis', 'pengeluaran')
             ->where('is_pinjaman', false)
+            ->where('kategori', '!=', 'Pembelian Strawberi (Pending)')
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->sum('jumlah');
 
@@ -221,6 +232,7 @@ class LaporanController extends Controller
         // Get transactions for this period
         $transaksis = Transaksi::whereBetween('tanggal', [$startDate, $endDate])
             ->where('is_pinjaman', false)
+            ->where('kategori', '!=', 'Pembelian Strawberi (Pending)')
             ->orderBy('tanggal', 'desc')
             ->paginate(10);
 

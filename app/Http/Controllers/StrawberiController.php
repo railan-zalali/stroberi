@@ -130,7 +130,7 @@ class StrawberiController extends Controller
 
         DB::beginTransaction();
         try {
-            // Simpan data strawberi dan langsung posting ke stok global
+            // Simpan data strawberi dan langsung diposting ke stok global
             $strawberi = Strawberi::create([
                 'jenis' => $request->jenis,
                 'grade' => $request->grade,
@@ -163,8 +163,8 @@ class StrawberiController extends Controller
 
             DB::commit();
 
-            return redirect()->route('strawberi.index')
-                ->with('success', 'Stok strawberi berhasil ditambahkan dan diposting ke stok global');
+            return redirect()->route('supplier.show', $supplier)
+                ->with('success', 'Stok strawberi berhasil ditambahkan ke stok global. Selesaikan transaksi untuk memasukkan pembelian ke pembukuan.');
         } catch (\Exception $e) {
             DB::rollback();
             return redirect()->back()
@@ -379,9 +379,9 @@ class StrawberiController extends Controller
             foreach ($batches as $batch) {
                 if ($remaining <= 0) break;
                 $available = $batch->stok_tersisa;
-                if ($available <= 1) continue;
+                if ($available <= 0) continue;
 
-                $maxTake = max(0, $available - 1);
+                $maxTake = $available;
                 $take = min($maxTake, $remaining);
                 if ($take <= 0) continue;
 
@@ -476,10 +476,10 @@ class StrawberiController extends Controller
                 ->withInput();
         }
 
-        $maxSell = $strawberi->stok_tersisa - 1;
+        $maxSell = $strawberi->stok_tersisa;
         if ($maxSell <= 0) {
             return redirect()->back()
-                ->with('error', 'Minimal sisa stok 1 kg. Stok tidak cukup untuk dijual')
+                ->with('error', 'Stok tidak cukup untuk dijual')
                 ->withInput();
         }
 

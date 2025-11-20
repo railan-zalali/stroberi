@@ -101,25 +101,18 @@
                                 <div class="mt-1">
                                     <select id="kategori" name="kategori"
                                         class="shadow-sm focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                                        @php($currentKategori = old('kategori', $transaksi->kategori))
+                                        @php($defaultKategoris = ['Penjualan','Pembelian','Gaji','Sewa','Operasional','Lainnya'])
                                         <option value="">Pilih Kategori</option>
-                                        <option value="Penjualan"
-                                            {{ old('kategori', $transaksi->kategori) == 'Penjualan' ? 'selected' : '' }}>
-                                            Penjualan</option>
-                                        <option value="Pembelian"
-                                            {{ old('kategori', $transaksi->kategori) == 'Pembelian' ? 'selected' : '' }}>
-                                            Pembelian</option>
-                                        <option value="Gaji"
-                                            {{ old('kategori', $transaksi->kategori) == 'Gaji' ? 'selected' : '' }}>
-                                            Gaji</option>
-                                        <option value="Sewa"
-                                            {{ old('kategori', $transaksi->kategori) == 'Sewa' ? 'selected' : '' }}>
-                                            Sewa</option>
-                                        <option value="Operasional"
-                                            {{ old('kategori', $transaksi->kategori) == 'Operasional' ? 'selected' : '' }}>
-                                            Operasional</option>
-                                        <option value="Lainnya"
-                                            {{ old('kategori', $transaksi->kategori) == 'Lainnya' ? 'selected' : '' }}>
-                                            Lainnya</option>
+                                        @if($currentKategori && !in_array($currentKategori, $defaultKategoris))
+                                            <option value="{{ $currentKategori }}" selected>{{ $currentKategori }}</option>
+                                        @endif
+                                        <option value="Penjualan" {{ $currentKategori == 'Penjualan' ? 'selected' : '' }}>Penjualan</option>
+                                        <option value="Pembelian" {{ $currentKategori == 'Pembelian' ? 'selected' : '' }}>Pembelian</option>
+                                        <option value="Gaji" {{ $currentKategori == 'Gaji' ? 'selected' : '' }}>Gaji</option>
+                                        <option value="Sewa" {{ $currentKategori == 'Sewa' ? 'selected' : '' }}>Sewa</option>
+                                        <option value="Operasional" {{ $currentKategori == 'Operasional' ? 'selected' : '' }}>Operasional</option>
+                                        <option value="Lainnya" {{ $currentKategori == 'Lainnya' ? 'selected' : '' }}>Lainnya</option>
                                     </select>
                                 </div>
                                 @error('kategori')
