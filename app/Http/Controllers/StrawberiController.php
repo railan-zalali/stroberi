@@ -186,6 +186,11 @@ class StrawberiController extends Controller
 
     public function update(Request $request, Strawberi $strawberi)
     {
+        if ($strawberi->is_posted) {
+            return redirect()->back()
+                ->with('error', 'Stok ini sudah diposting/dituntaskan dan tidak dapat diedit lagi')
+                ->withInput();
+        }
         $request->validate([
             'jenis' => 'required|in:segar,beku',
             'grade' => 'required|in:a,b,c',
@@ -223,6 +228,11 @@ class StrawberiController extends Controller
 
     public function adjust(Request $request, Strawberi $strawberi)
     {
+        if ($strawberi->is_posted) {
+            return redirect()->back()
+                ->with('error', 'Stok ini sudah diposting/dituntaskan dan tidak dapat disesuaikan lagi')
+                ->withInput();
+        }
         $request->validate([
             'adjust_quantity' => 'required|numeric|not_in:0',
             'adjust_notes' => 'nullable|string'
@@ -448,6 +458,10 @@ class StrawberiController extends Controller
 
     public function destroy(Strawberi $strawberi)
     {
+        if ($strawberi->is_posted) {
+            return redirect()->route('strawberi.index')
+                ->with('error', 'Stok yang sudah diposting/dituntaskan tidak dapat dihapus');
+        }
         $strawberi->delete();
         return redirect()->route('strawberi.index')
             ->with('success', 'Stok strawberi berhasil dihapus');

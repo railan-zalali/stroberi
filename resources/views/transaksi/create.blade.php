@@ -26,19 +26,7 @@
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <!-- Keterangan -->
-                            {{-- <div>
-                                <label for="supplier_name"
-                                    class="block text-sm font-medium text-gray-700">Keterangan</label>
-                                <div class="mt-1">
-                                    <input type="text" name="supplier_name" id="supplier_name"
-                                        value="{{ old('supplier_name', $supplierName ?? '') }}"
-                                        class="shadow-sm focus:ring-green-500 focus:border-green-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                                        placeholder="Masukkan keterangan">
-                                </div>
-                                @error('supplier_name')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div> --}}
+                            
                             <!-- Jenis Transaksi -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Jenis Transaksi</label>
@@ -147,9 +135,6 @@
                                         <option value="penjualan"
                                             {{ old('tipe_transaksi', isset($prefilledTipeTransaksi) ? $prefilledTipeTransaksi : '') == 'penjualan' ? 'selected' : '' }}>
                                             Penjualan</option>
-                                        <option value="pinjaman"
-                                            {{ old('tipe_transaksi', isset($prefilledTipeTransaksi) ? $prefilledTipeTransaksi : '') == 'pinjaman' ? 'selected' : '' }}>
-                                            Pinjaman</option>
                                         <option value="pembayaran"
                                             {{ old('tipe_transaksi', isset($prefilledTipeTransaksi) ? $prefilledTipeTransaksi : '') == 'pembayaran' ? 'selected' : '' }}>
                                             Pembayaran</option>
@@ -164,45 +149,7 @@
                             </div>
 
                             <!-- Is Pinjaman -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Status Pinjaman</label>
-                                <div class="mt-4 flex space-x-4">
-                                    <div class="flex items-center">
-                                        <input id="is_pinjaman_true" name="is_pinjaman" type="radio"
-                                            value="1"
-                                            class="focus:ring-yellow-500 h-4 w-4 text-yellow-600 border-gray-300"
-                                            {{ old('is_pinjaman', isset($prefilledIsPinjaman) && $prefilledIsPinjaman ? '1' : '') == '1' ? 'checked' : '' }}>
-                                        <label for="is_pinjaman_true"
-                                            class="ml-2 block text-sm text-gray-700 flex items-center">
-                                            <svg xmlns="http://www.w3.org/2000/svg"
-                                                class="h-5 w-5 mr-1 text-yellow-500" fill="none"
-                                                viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                            Ya (Pinjaman)
-                                        </label>
-                                    </div>
-                                    <div class="flex items-center">
-                                        <input id="is_pinjaman_false" name="is_pinjaman" type="radio"
-                                            value="0"
-                                            class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"
-                                            {{ old('is_pinjaman', isset($prefilledIsPinjaman) && !$prefilledIsPinjaman ? '0' : '') == '0' ? 'checked' : '' }}>
-                                        <label for="is_pinjaman_false"
-                                            class="ml-2 block text-sm text-gray-700 flex items-center">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1 text-blue-500"
-                                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                            Tidak
-                                        </label>
-                                    </div>
-                                </div>
-                                @error('is_pinjaman')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
+                            
 
                             <!-- Bukti Pembayaran -->
                             <div class="md:col-span-2">

@@ -88,12 +88,7 @@ class TransaksiController extends Controller
             $kategori = $request->jenis == 'pemasukan' ? 'Penjualan' : 'Operasional';
         }
 
-        // Validasi khusus pinjaman: butuh nama supplier
-        if (($request->is_pinjaman || $request->tipe_transaksi == 'pinjaman') && empty($request->supplier_name)) {
-            return redirect()->back()
-                ->with('error', 'Nama supplier harus diisi untuk transaksi pinjaman')
-                ->withInput();
-        }
+        // Tidak menggunakan logika pinjaman pada form manual
 
         // Handle file upload for bukti_pembayaran
         $buktiPembayaranPath = null;
@@ -108,9 +103,9 @@ class TransaksiController extends Controller
             'kategori' => $kategori,
             'keterangan' => $request->keterangan,
             'tipe_transaksi' => $request->tipe_transaksi ?? 'lainnya',
-            'is_pinjaman' => $request->is_pinjaman ?? false,
+            'is_pinjaman' => false,
             'user_id' => Auth::id(),
-            'supplier_name' => $request->supplier_name,
+            'supplier_name' => null,
             'bukti_pembayaran' => $buktiPembayaranPath,
         ]);
 
@@ -174,9 +169,9 @@ class TransaksiController extends Controller
             'tanggal' => $request->tanggal,
             'kategori' => $request->kategori,
             'keterangan' => $request->keterangan,
-            'tipe_transaksi' => $request->tipe_transaksi,
-            'is_pinjaman' => $request->is_pinjaman,
-            'supplier_name' => $request->supplier_name,
+            'tipe_transaksi' => $request->tipe_transaksi ?? $transaksi->tipe_transaksi,
+            'is_pinjaman' => $request->has('is_pinjaman') ? (bool)$request->is_pinjaman : ($transaksi->is_pinjaman ?? false),
+            'supplier_name' => $request->has('supplier_name') ? $request->supplier_name : $transaksi->supplier_name,
             'bukti_pembayaran' => $buktiPembayaranPath,
         ]);
 

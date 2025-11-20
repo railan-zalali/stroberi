@@ -21,6 +21,12 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 border-b border-gray-200">
+                    @if($strawberi->is_posted)
+                        <div class="mb-6 bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded">
+                            Stok ini sudah diposting/dituntaskan. Perubahan dan penyesuaian tidak diperbolehkan.
+                        </div>
+                    @endif
+                    @unless($strawberi->is_posted)
                     <form method="POST" action="{{ route('strawberi.update', $strawberi) }}" class="space-y-6">
                         @csrf
                         @method('PUT')
@@ -194,6 +200,7 @@
                             </button>
                         </div>
                     </form>
+                    @endunless
                 </div>
             </div>
 
@@ -201,6 +208,7 @@
                 <div class="p-6 border-b border-gray-200">
                     <h3 class="text-lg font-medium text-gray-900 mb-4">Penyesuaian Stok</h3>
                     <p class="text-sm text-gray-600 mb-4">Gunakan penyesuaian untuk mengubah nilai stok berjalan tanpa mengubah jumlah dasar pembelian.</p>
+                    @unless($strawberi->is_posted)
                     <form method="POST" action="{{ route('strawberi.adjust', $strawberi) }}" class="space-y-4">
                         @csrf
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -230,6 +238,11 @@
                             </button>
                         </div>
                     </form>
+                    @else
+                        <div class="bg-gray-50 border border-gray-200 text-gray-700 p-4 rounded">
+                            Penyesuaian stok tidak tersedia karena stok sudah diposting/dituntaskan.
+                        </div>
+                    @endunless
                 </div>
             </div>
         </div>
