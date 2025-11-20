@@ -26,7 +26,7 @@
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <!-- Keterangan -->
-                            <div>
+                            {{-- <div>
                                 <label for="supplier_name"
                                     class="block text-sm font-medium text-gray-700">Keterangan</label>
                                 <div class="mt-1">
@@ -38,7 +38,7 @@
                                 @error('supplier_name')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
-                            </div>
+                            </div> --}}
                             <!-- Jenis Transaksi -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Jenis Transaksi</label>

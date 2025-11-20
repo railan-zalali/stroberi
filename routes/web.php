@@ -36,6 +36,7 @@ Route::middleware(['auth'])->group(function () {
     // Resource dan aksi jual per item
     Route::resource('strawberi', StrawberiController::class);
     Route::post('/strawberi/{strawberi}/sell', [StrawberiController::class, 'sell'])->name('strawberi.sell');
+    Route::post('/strawberi/{strawberi}/adjust', [StrawberiController::class, 'adjust'])->name('strawberi.adjust');
 
     // Supplier routes
     Route::resource('supplier', SupplierController::class);

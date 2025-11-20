@@ -88,18 +88,15 @@
                                 @enderror
                             </div>
 
-                            <!-- Jumlah -->
+                            <!-- Jumlah (nonaktif, gunakan penyesuaian stok) -->
                             <div>
-                                <label for="jumlah" class="block text-sm font-medium text-gray-700">Jumlah
-                                    (kg)</label>
+                                <label class="block text-sm font-medium text-gray-700">Jumlah (kg)</label>
                                 <div class="mt-1">
-                                    <input type="number" step="0.01" name="jumlah" id="jumlah"
-                                        value="{{ old('jumlah', $strawberi->jumlah) }}"
-                                        class="shadow-sm focus:ring-red-500 focus:border-red-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                                    <input type="number" step="0.01" value="{{ number_format($strawberi->jumlah, 2) }}"
+                                        class="shadow-sm block w-full sm:text-sm border-gray-300 rounded-md bg-gray-100 cursor-not-allowed" disabled>
+                                    <input type="hidden" name="jumlah" value="{{ $strawberi->jumlah }}">
                                 </div>
-                                @error('jumlah')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
+                                <p class="mt-1 text-xs text-gray-500">Jumlah dasar pembelian tidak dapat diubah di sini. Gunakan bagian "Penyesuaian Stok" di bawah untuk mengubah stok berjalan.</p>
                             </div>
 
                             <!-- Harga Beli -->
@@ -194,6 +191,42 @@
                             <button type="submit"
                                 class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
                                 Perbarui
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="mt-6 bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 border-b border-gray-200">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Penyesuaian Stok</h3>
+                    <p class="text-sm text-gray-600 mb-4">Gunakan penyesuaian untuk mengubah nilai stok berjalan tanpa mengubah jumlah dasar pembelian.</p>
+                    <form method="POST" action="{{ route('strawberi.adjust', $strawberi) }}" class="space-y-4">
+                        @csrf
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="adjust_quantity" class="block text-sm font-medium text-gray-700">Jumlah Penyesuaian (kg)</label>
+                                <input type="number" step="0.01" name="adjust_quantity" id="adjust_quantity" required
+                                       class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                                       placeholder="Contoh: +5 atau -1 (minimal pengurangan 1 kg)">
+                                @error('adjust_quantity')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div>
+                                <label for="adjust_notes" class="block text-sm font-medium text-gray-700">Catatan</label>
+                                <input type="text" name="adjust_notes" id="adjust_notes"
+                                       class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                                       placeholder="Alasan penyesuaian">
+                                @error('adjust_notes')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+                        <div class="flex justify-end space-x-3">
+                            <button type="submit"
+                                    class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                Simpan Penyesuaian
                             </button>
                         </div>
                     </form>

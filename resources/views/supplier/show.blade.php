@@ -421,11 +421,15 @@
                                                 </th>
                                                 <th scope="col"
                                                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                                                    Jumlah
+                                                    Stok Tersisa
                                                 </th>
                                                 <th scope="col"
                                                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                                                     Harga Beli
+                                                </th>
+                                                <th scope="col"
+                                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                                    Nilai Stok
                                                 </th>
                                                 <th scope="col"
                                                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
@@ -484,11 +488,16 @@
                                                     </td>
                                                     <td class="px-6 py-4">
                                                         <div class="text-sm text-gray-900">
-                                                            {{ number_format($strawberi->jumlah, 2) }} kg</div>
+                                                            {{ number_format($strawberi->stok_tersisa, 2) }} kg</div>
                                                     </td>
                                                     <td class="px-6 py-4">
                                                         <div class="text-sm text-gray-900">Rp
                                                             {{ number_format($strawberi->harga_beli, 0, ',', '.') }}
+                                                        </div>
+                                                    </td>
+                                                    <td class="px-6 py-4">
+                                                        <div class="text-sm text-gray-900">Rp
+                                                            {{ number_format($strawberi->stok_tersisa * $strawberi->harga_beli, 0, ',', '.') }}
                                                         </div>
                                                     </td>
                                                     <td class="px-6 py-4">

@@ -75,15 +75,15 @@
 
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
-                                    <p class="text-sm text-gray-500">Jumlah</p>
+                                    <p class="text-sm text-gray-500">Stok Tersisa</p>
                                     <p class="text-lg font-semibold text-gray-800">
-                                        {{ number_format($strawberi->jumlah, 2) }} kg</p>
+                                        {{ number_format($strawberi->stok_tersisa, 2) }} kg</p>
                                 </div>
 
                                 <div>
-                                    <p class="text-sm text-gray-500">Total Nilai</p>
+                                    <p class="text-sm text-gray-500">Nilai Stok Saat Ini</p>
                                     <p class="text-lg font-semibold text-gray-800">Rp
-                                        {{ number_format($strawberi->jumlah * $strawberi->harga_beli, 0, ',', '.') }}
+                                        {{ number_format($strawberi->stok_tersisa * $strawberi->harga_beli, 0, ',', '.') }}
                                     </p>
                                 </div>
 
@@ -106,13 +106,13 @@
                                     <p
                                         class="text-lg font-semibold {{ $strawberi->isKadaluarsa() ? 'text-red-600' : ($strawberi->isHampirKadaluarsa() ? 'text-yellow-600' : 'text-green-600') }}">
                                         {{ $strawberi->tanggal_kadaluarsa->format('d M Y') }}
-                                        @if ($strawberi->isKadaluarsa())
+                                        {{-- @if ($strawberi->isKadaluarsa())
                                             (Kadaluarsa)
                                         @elseif($strawberi->isHampirKadaluarsa())
                                             ({{ $strawberi->tanggal_kadaluarsa->diffInDays(now()) }} hari lagi)
                                         @else
                                             {{ $strawberi->tanggal_kadaluarsa->diffInDays(now()) }} hari lagi
-                                        @endif
+                                        @endif --}}
                                     </p>
                                 </div>
 
@@ -223,18 +223,18 @@
                                     Stok ini sudah kadaluarsa pada
                                     {{ $strawberi->tanggal_kadaluarsa->format('d M Y') }}.
                                 @elseif($strawberi->isHampirKadaluarsa())
-                                    Stok ini akan kadaluarsa dalam
-                                    {{ $strawberi->tanggal_kadaluarsa->diffInDays(now()) }} hari lagi.
+                                    Stok ini kadaluarsa pada
+                                    {{ $strawberi->tanggal_kadaluarsa->format('d M Y') }}.
                                     Segera jual atau gunakan stok ini untuk menghindari kerugian.
                                 @else
-                                    Stok ini masih baik dan akan kadaluarsa dalam
-                                    {{ $strawberi->tanggal_kadaluarsa->diffInDays(now()) }} hari lagi.
+                                    Stok ini masih baik dan akan kadaluarsa pada
+                                    {{ $strawberi->tanggal_kadaluarsa->format('d M Y') }}.
                                 @endif
                             </p>
                         </div>
                     </div>
 
-                    
+
 
                     <!-- Riwayat Penjualan -->
                     <div class="mt-12 bg-white p-6 rounded-lg shadow-md">
