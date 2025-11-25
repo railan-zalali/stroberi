@@ -106,22 +106,43 @@
                                         class="text-lg font-semibold {{ $sisaPinjaman > 0 ? 'text-red-600' : 'text-green-600' }}">Rp
                                         {{ number_format($sisaPinjaman, 0, ',', '.') }}</span>
                                 </div>
-                                @if ($pendingBatches->count() > 0)
+                                @if ($unpaidPurchases->count() > 0)
                                     <div class="mt-4">
-                                        <h4 class="text-sm font-medium text-gray-700 mb-2">Pembelian Pending (belum diposting ke pembukuan)</h4>
-                                        <div class="text-xs text-gray-600 mb-2">Total Nilai Pending: Rp
-                                            {{ number_format($pendingTotalNilai, 0, ',', '.') }}</div>
+                                        <h4 class="text-sm font-medium text-gray-700 mb-2">Pembelian Belum Dibayar</h4>
+                                        <div class="text-xs text-gray-600 mb-2">Total Nilai Belum Dibayar: Rp
+                                            {{ number_format($unpaidTotalNilai, 0, ',', '.') }}</div>
+                                        <div class="space-y-2 max-h-32 overflow-y-auto">
+                                            @foreach ($unpaidPurchases as $purchase)
+                                                <div
+                                                    class="flex justify-between items-center text-xs bg-red-50 p-2 rounded">
+                                                    <div>
+                                                        <div class="font-medium">
+                                                            {{ $purchase->tanggal->format('d/m/Y') }}</div>
+                                                        <div class="text-gray-600">{{ $purchase->keterangan }}</div>
+                                                    </div>
+                                                    <div class="text-right">
+                                                        <div class="font-semibold text-red-600">Rp
+                                                            {{ number_format($purchase->jumlah, 0, ',', '.') }}</div>
+                                                        <form
+                                                            action="{{ route('supplier.mark-paid', [$supplier, $purchase]) }}"
+                                                            method="POST" class="inline">
+                                                            @csrf
+                                                            <button type="submit"
+                                                                class="text-xs text-green-600 hover:text-green-800 underline"
+                                                                onclick="return confirm('Tandai transaksi ini sebagai sudah dibayar?')">
+                                                                Bayar
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @else
+                                    <div class="mt-4 text-center">
+                                        <p class="text-sm text-gray-500">Tidak ada pembelian yang belum dibayar.</p>
                                     </div>
                                 @endif
-                                <div class="mt-4">
-                                    <form action="{{ route('supplier.finish', $supplier) }}" method="POST">
-                                        @csrf
-                                        <button type="submit"
-                                            class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                                            Selesaikan Transaksi
-                                        </button>
-                                    </form>
-                                </div>
                             </div>
                         </div>
 
@@ -599,6 +620,10 @@
                                                 </th>
                                                 <th scope="col"
                                                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                                    Status Bayar
+                                                </th>
+                                                <th scope="col"
+                                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                                                     Aksi
                                                 </th>
                                             </tr>
@@ -635,8 +660,52 @@
                                                     <td class="px-6 py-4 text-sm text-gray-500">
                                                         {{ Str::limit($transaksi->keterangan, 50) ?? '-' }}
                                                     </td>
+                                                    <td class="px-6 py-4">
+                                                        @if ($transaksi->jenis == 'pengeluaran' && $transaksi->kategori == 'Pembelian Strawberi' && !$transaksi->is_pinjaman)
+                                                            @if ($transaksi->is_paid)
+                                                                <span
+                                                                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                                                    Sudah Dibayar
+                                                                </span>
+                                                                <div class="text-xs text-gray-500 mt-1">
+                                                                    {{ $transaksi->paid_at->format('d/m/Y') }}
+                                                                </div>
+                                                            @else
+                                                                <span
+                                                                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                                                    Belum Dibayar
+                                                                </span>
+                                                            @endif
+                                                        @else
+                                                            <span class="text-gray-400">-</span>
+                                                        @endif
+                                                    </td>
                                                     <td class="px-6 py-4 text-sm font-medium">
                                                         <div class="flex space-x-2">
+                                                            @if (
+                                                                $transaksi->jenis == 'pengeluaran' &&
+                                                                    $transaksi->kategori == 'Pembelian Strawberi' &&
+                                                                    !$transaksi->is_pinjaman &&
+                                                                    !$transaksi->is_paid)
+                                                                <form
+                                                                    action="{{ route('supplier.mark-paid', [$supplier, $transaksi]) }}"
+                                                                    method="POST" class="inline">
+                                                                    @csrf
+                                                                    <button type="submit"
+                                                                        class="text-green-600 hover:text-green-900"
+                                                                        onclick="return confirm('Tandai transaksi ini sebagai sudah dibayar?')"
+                                                                        title="Tandai sebagai dibayar">
+                                                                        <svg xmlns="http://www.w3.org/2000/svg"
+                                                                            class="h-5 w-5" fill="none"
+                                                                            viewBox="0 0 24 24" stroke="currentColor">
+                                                                            <path stroke-linecap="round"
+                                                                                stroke-linejoin="round"
+                                                                                stroke-width="2"
+                                                                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                                        </svg>
+                                                                    </button>
+                                                                </form>
+                                                            @endif
                                                             <a href="{{ route('transaksi.show', $transaksi) }}"
                                                                 class="text-green-600 hover:text-green-900">
                                                                 <svg xmlns="http://www.w3.org/2000/svg"
@@ -655,7 +724,7 @@
                                                 </tr>
                                             @empty
                                                 <tr>
-                                                    <td colspan="6"
+                                                    <td colspan="7"
                                                         class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                                                         Tidak ada data transaksi
                                                     </td>

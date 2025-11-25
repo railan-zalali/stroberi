@@ -48,12 +48,20 @@ Route::middleware(['auth'])->group(function () {
 
     // Selesaikan transaksi kredit supplier (posting stok & pembukuan)
     Route::post('/supplier/{supplier}/selesaikan-transaksi', [SupplierController::class, 'finishTransactions'])->name('supplier.finish');
+    // Tandai transaksi sebagai sudah dibayar
+    Route::post('/supplier/{supplier}/transaksi/{transaksi}/mark-paid', [SupplierController::class, 'markAsPaid'])->name('supplier.mark-paid');
 
     // Export routes (only Excel and PDF) — place BEFORE resource to avoid wildcard collision
     Route::get('/transaksi/export', [TransaksiController::class, 'export'])->name('transaksi.export');
     Route::get('/transaksi/export/pdf', [TransaksiController::class, 'exportPdf'])->name('transaksi.export.pdf');
     Route::get('/transaksi/export/month/{year}/{month}', [TransaksiController::class, 'exportMonth'])->name('transaksi.export.month');
     Route::get('/transaksi/export/year/{year}', [TransaksiController::class, 'exportYear'])->name('transaksi.export.year');
+
+    // Complete stock transaction after payment confirmation
+    Route::post('/transaksi/{transaksi}/complete-stock', [TransaksiController::class, 'completeStockTransaction'])->name('transaksi.complete-stock');
+
+    // Finalize stock (for pending stock allocations)
+    Route::post('/transaksi/finalize-stock/{strawberi}', [TransaksiController::class, 'finalizeStock'])->name('transaksi.finalize-stock');
 
     // Transaksi routes
     Route::resource('transaksi', TransaksiController::class);

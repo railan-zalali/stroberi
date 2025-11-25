@@ -21,17 +21,27 @@ class Transaksi extends Model
         'bukti_pembayaran',
         'tipe_transaksi',
         'is_pinjaman',
+        'is_paid',
+        'paid_at',
+        'paid_by',
     ];
 
     protected $casts = [
         'tanggal' => 'date',
         'jumlah' => 'decimal:2',
         'is_pinjaman' => 'boolean',
+        'is_paid' => 'boolean',
+        'paid_at' => 'datetime',
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function paidByUser()
+    {
+        return $this->belongsTo(User::class, 'paid_by');
     }
 
     public function supplier()
@@ -63,5 +73,26 @@ class Transaksi extends Model
     {
         return $query->where('tipe_transaksi', 'pengembalian')
             ->where('jenis', 'pemasukan'); // Pemasukan karena uang masuk ke perusahaan dari supplier
+    }
+
+    // Scope untuk transaksi yang sudah dibayar
+    public function scopePaid($query)
+    {
+        return $query->where('is_paid', true);
+    }
+
+    // Scope untuk transaksi yang belum dibayar
+    public function scopeUnpaid($query)
+    {
+        return $query->where('is_paid', false);
+    }
+
+    // Scope untuk pembelian strawberi yang belum dibayar
+    public function scopeUnpaidPurchases($query)
+    {
+        return $query->where('jenis', 'pengeluaran')
+            ->where('kategori', 'Pembelian Strawberi')
+            ->where('is_pinjaman', false)
+            ->where('is_paid', false);
     }
 }

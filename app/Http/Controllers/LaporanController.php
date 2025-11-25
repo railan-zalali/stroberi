@@ -50,24 +50,55 @@ class LaporanController extends Controller
         $startDate = Carbon::parse("$tahun-$bulan-01")->startOfMonth();
         $endDate = Carbon::parse("$tahun-$bulan-01")->endOfMonth();
 
-        // Calculate totals
+        // Calculate totals (including loan transactions)
         $totalPemasukan = Transaksi::where('jenis', 'pemasukan')
-            ->where('is_pinjaman', false)
+            ->where(function ($query) {
+                $query->where('is_pinjaman', false)
+                    ->orWhere(function ($q) {
+                        $q->where('is_pinjaman', true)
+                            ->where('tipe_transaksi', 'pengembalian'); // Include loan repayments
+                    });
+            })
             ->where('kategori', '!=', 'Pembelian Strawberi (Pending)')
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->sum('jumlah');
 
         $totalPengeluaran = Transaksi::where('jenis', 'pengeluaran')
-            ->where('is_pinjaman', false)
+            ->where(function ($query) use ($tipeTransaksi) {
+                if ($tipeTransaksi === 'biasa') {
+                    $query->where('is_pinjaman', false);
+                } elseif ($tipeTransaksi === 'pinjaman') {
+                    $query->where('is_pinjaman', true)
+                        ->where('tipe_transaksi', 'pinjaman');
+                } elseif ($tipeTransaksi === 'pengembalian') {
+                    $query->where('is_pinjaman', true)
+                        ->where('tipe_transaksi', 'pengembalian');
+                } else {
+                    // Semua transaksi - include both regular and loan transactions
+                    $query->where(function ($q) {
+                        $q->where('is_pinjaman', false)
+                            ->orWhere(function ($subQ) {
+                                $subQ->where('is_pinjaman', true)
+                                    ->whereIn('tipe_transaksi', ['pinjaman', 'pengembalian']);
+                            });
+                    });
+                }
+            })
             ->where('kategori', '!=', 'Pembelian Strawberi (Pending)')
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->sum('jumlah');
 
         $laba = $totalPemasukan - $totalPengeluaran;
 
-        // Generate PDF report
+        // Generate PDF report (including loan transactions)
         $transaksis = Transaksi::whereBetween('tanggal', [$startDate, $endDate])
-            ->where('is_pinjaman', false)
+            ->where(function ($query) {
+                $query->where('is_pinjaman', false)
+                    ->orWhere(function ($q) {
+                        $q->where('is_pinjaman', true)
+                            ->whereIn('tipe_transaksi', ['pinjaman', 'pengembalian']); // Include loan transactions
+                    });
+            })
             ->where('kategori', '!=', 'Pembelian Strawberi (Pending)')
             ->orderBy('tanggal', 'asc')
             ->get();
@@ -108,6 +139,7 @@ class LaporanController extends Controller
     {
         $bulan = $laporan->bulan;
         $tahun = $laporan->tahun;
+        $tipeTransaksi = request('tipe_transaksi');
 
         // Get first and last day of month
         $startDate = Carbon::parse("$tahun-$bulan-01")->startOfMonth();
@@ -115,12 +147,52 @@ class LaporanController extends Controller
 
         // Get transactions for this period
         $transaksis = Transaksi::whereBetween('tanggal', [$startDate, $endDate])
+            ->where(function ($query) use ($tipeTransaksi) {
+                if ($tipeTransaksi === 'biasa') {
+                    $query->where('is_pinjaman', false);
+                } elseif ($tipeTransaksi === 'pinjaman') {
+                    $query->where('is_pinjaman', true)
+                        ->where('tipe_transaksi', 'pinjaman');
+                } elseif ($tipeTransaksi === 'pengembalian') {
+                    $query->where('is_pinjaman', true)
+                        ->where('tipe_transaksi', 'pengembalian');
+                } else {
+                    // Semua transaksi - include both regular and loan transactions
+                    $query->where(function ($q) {
+                        $q->where('is_pinjaman', false)
+                            ->orWhere(function ($subQ) {
+                                $subQ->where('is_pinjaman', true)
+                                    ->whereIn('tipe_transaksi', ['pinjaman', 'pengembalian']);
+                            });
+                    });
+                }
+            })
+            ->where('kategori', '!=', 'Pembelian Strawberi (Pending)')
             ->orderBy('tanggal', 'asc')
             ->get();
 
-        // Get category totals for pie chart
+        // Get category totals for pie chart (including loan transactions)
         $pemasukanKategori = Transaksi::where('jenis', 'pemasukan')
-            ->where('is_pinjaman', false)
+            ->where(function ($query) use ($tipeTransaksi) {
+                if ($tipeTransaksi === 'biasa') {
+                    $query->where('is_pinjaman', false);
+                } elseif ($tipeTransaksi === 'pinjaman') {
+                    $query->where('is_pinjaman', true)
+                        ->where('tipe_transaksi', 'pinjaman');
+                } elseif ($tipeTransaksi === 'pengembalian') {
+                    $query->where('is_pinjaman', true)
+                        ->where('tipe_transaksi', 'pengembalian');
+                } else {
+                    // Semua transaksi - include both regular and loan transactions
+                    $query->where(function ($q) {
+                        $q->where('is_pinjaman', false)
+                            ->orWhere(function ($subQ) {
+                                $subQ->where('is_pinjaman', true)
+                                    ->whereIn('tipe_transaksi', ['pinjaman', 'pengembalian']);
+                            });
+                    });
+                }
+            })
             ->where('kategori', '!=', 'Pembelian Strawberi (Pending)')
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->selectRaw('kategori, sum(jumlah) as total')
@@ -128,16 +200,54 @@ class LaporanController extends Controller
             ->get();
 
         $pengeluaranKategori = Transaksi::where('jenis', 'pengeluaran')
-            ->where('is_pinjaman', false)
+            ->where(function ($query) use ($tipeTransaksi) {
+                if ($tipeTransaksi === 'biasa') {
+                    $query->where('is_pinjaman', false);
+                } elseif ($tipeTransaksi === 'pinjaman') {
+                    $query->where('is_pinjaman', true)
+                        ->where('tipe_transaksi', 'pinjaman');
+                } elseif ($tipeTransaksi === 'pengembalian') {
+                    $query->where('is_pinjaman', true)
+                        ->where('tipe_transaksi', 'pengembalian');
+                } else {
+                    // Semua transaksi - include both regular and loan transactions
+                    $query->where(function ($q) {
+                        $q->where('is_pinjaman', false)
+                            ->orWhere(function ($subQ) {
+                                $subQ->where('is_pinjaman', true)
+                                    ->whereIn('tipe_transaksi', ['pinjaman', 'pengembalian']);
+                            });
+                    });
+                }
+            })
             ->where('kategori', '!=', 'Pembelian Strawberi (Pending)')
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->selectRaw('kategori, sum(jumlah) as total')
             ->groupBy('kategori')
             ->get();
 
-        // Get daily totals for line chart
+        // Get daily totals for line chart (including loan transactions)
         $dailyData = Transaksi::whereBetween('tanggal', [$startDate, $endDate])
-            ->where('is_pinjaman', false)
+            ->where(function ($query) use ($tipeTransaksi) {
+                if ($tipeTransaksi === 'biasa') {
+                    $query->where('is_pinjaman', false);
+                } elseif ($tipeTransaksi === 'pinjaman') {
+                    $query->where('is_pinjaman', true)
+                        ->where('tipe_transaksi', 'pinjaman');
+                } elseif ($tipeTransaksi === 'pengembalian') {
+                    $query->where('is_pinjaman', true)
+                        ->where('tipe_transaksi', 'pengembalian');
+                } else {
+                    // Semua transaksi - include both regular and loan transactions
+                    $query->where(function ($q) {
+                        $q->where('is_pinjaman', false)
+                            ->orWhere(function ($subQ) {
+                                $subQ->where('is_pinjaman', true)
+                                    ->whereIn('tipe_transaksi', ['pinjaman', 'pengembalian']);
+                            });
+                    });
+                }
+            })
             ->where('kategori', '!=', 'Pembelian Strawberi (Pending)')
             ->selectRaw('tanggal, jenis, sum(jumlah) as total')
             ->groupBy('tanggal', 'jenis')
@@ -151,7 +261,7 @@ class LaporanController extends Controller
             'harian' => $this->formatDailyData($dailyData, $startDate, $endDate),
         ];
 
-        return view('laporan.show', compact('laporan', 'transaksis', 'chartData'));
+        return view('laporan.show', compact('laporan', 'transaksis', 'chartData', 'tipeTransaksi'));
     }
 
     public function destroy(Laporan $laporan)
@@ -181,15 +291,35 @@ class LaporanController extends Controller
         // Default to current month
         $bulan = request('bulan', Carbon::now()->format('m'));
         $tahun = request('tahun', Carbon::now()->year);
+        $tipeTransaksi = request('tipe_transaksi');
 
         $startDate = Carbon::createFromDate($tahun, $bulan, 1)->startOfMonth();
         $endDate = Carbon::createFromDate($tahun, $bulan, 1)->endOfMonth();
 
-        // Get monthly data for the current year
+        // Get monthly data for the current year (including loan transactions)
         $bulananData = Transaksi::whereYear('tanggal', $tahun)
-            ->where('is_pinjaman', false)
+            ->where(function ($query) use ($tipeTransaksi) {
+                if ($tipeTransaksi === 'biasa') {
+                    $query->where('is_pinjaman', false);
+                } elseif ($tipeTransaksi === 'pinjaman') {
+                    $query->where('is_pinjaman', true)
+                        ->where('tipe_transaksi', 'pinjaman');
+                } elseif ($tipeTransaksi === 'pengembalian') {
+                    $query->where('is_pinjaman', true)
+                        ->where('tipe_transaksi', 'pengembalian');
+                } else {
+                    // Semua transaksi - include both regular and loan transactions
+                    $query->where(function ($q) {
+                        $q->where('is_pinjaman', false)
+                            ->orWhere(function ($subQ) {
+                                $subQ->where('is_pinjaman', true)
+                                    ->whereIn('tipe_transaksi', ['pinjaman', 'pengembalian']);
+                            });
+                    });
+                }
+            })
             ->where('kategori', '!=', 'Pembelian Strawberi (Pending)')
-            ->selectRaw('MONTH(tanggal) as bulan, jenis, sum(jumlah) as total')
+            ->selectRaw("MONTH(tanggal) as bulan, jenis, sum(jumlah) as total")
             ->groupBy('bulan', 'jenis')
             ->get()
             ->groupBy('bulan');
@@ -197,9 +327,28 @@ class LaporanController extends Controller
         // Format data for chart
         $monthlyChart = $this->formatMonthlyData($bulananData, $tahun);
 
-        // Get category totals for the selected month
+        // Get category totals for the selected month (including loan repayments)
         $pemasukanKategori = Transaksi::where('jenis', 'pemasukan')
-            ->where('is_pinjaman', false)
+            ->where(function ($query) use ($tipeTransaksi) {
+                if ($tipeTransaksi === 'biasa') {
+                    $query->where('is_pinjaman', false);
+                } elseif ($tipeTransaksi === 'pinjaman') {
+                    $query->where('is_pinjaman', true)
+                        ->where('tipe_transaksi', 'pinjaman');
+                } elseif ($tipeTransaksi === 'pengembalian') {
+                    $query->where('is_pinjaman', true)
+                        ->where('tipe_transaksi', 'pengembalian');
+                } else {
+                    // Semua transaksi - include both regular and loan transactions
+                    $query->where(function ($q) {
+                        $q->where('is_pinjaman', false)
+                            ->orWhere(function ($subQ) {
+                                $subQ->where('is_pinjaman', true)
+                                    ->whereIn('tipe_transaksi', ['pinjaman', 'pengembalian']);
+                            });
+                    });
+                }
+            })
             ->where('kategori', '!=', 'Pembelian Strawberi (Pending)')
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->selectRaw('kategori, sum(jumlah) as total')
@@ -207,31 +356,81 @@ class LaporanController extends Controller
             ->get();
 
         $pengeluaranKategori = Transaksi::where('jenis', 'pengeluaran')
-            ->where('is_pinjaman', false)
+            ->where(function ($query) {
+                $query->where('is_pinjaman', false)
+                    ->orWhere(function ($q) {
+                        $q->where('is_pinjaman', true)
+                            ->where('tipe_transaksi', 'pinjaman'); // Include loan disbursements
+                    });
+            })
             ->where('kategori', '!=', 'Pembelian Strawberi (Pending)')
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->selectRaw('kategori, sum(jumlah) as total')
             ->groupBy('kategori')
             ->get();
 
-        // Get summary data for the selected month
+        // Get summary data for the selected month (including loan transactions)
         $totalPemasukan = Transaksi::where('jenis', 'pemasukan')
-            ->where('is_pinjaman', false)
+            ->where(function ($query) use ($tipeTransaksi) {
+                if ($tipeTransaksi === 'biasa') {
+                    $query->where('is_pinjaman', false);
+                } elseif ($tipeTransaksi === 'pinjaman') {
+                    $query->where('is_pinjaman', true)
+                        ->where('tipe_transaksi', 'pinjaman');
+                } elseif ($tipeTransaksi === 'pengembalian') {
+                    $query->where('is_pinjaman', true)
+                        ->where('tipe_transaksi', 'pengembalian');
+                } else {
+                    // Semua transaksi - include both regular and loan transactions
+                    $query->where(function ($q) {
+                        $q->where('is_pinjaman', false)
+                            ->orWhere(function ($subQ) {
+                                $subQ->where('is_pinjaman', true)
+                                    ->whereIn('tipe_transaksi', ['pinjaman', 'pengembalian']);
+                            });
+                    });
+                }
+            })
             ->where('kategori', '!=', 'Pembelian Strawberi (Pending)')
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->sum('jumlah');
 
         $totalPengeluaran = Transaksi::where('jenis', 'pengeluaran')
-            ->where('is_pinjaman', false)
+            ->where(function ($query) {
+                $query->where('is_pinjaman', false)
+                    ->orWhere(function ($q) {
+                        $q->where('is_pinjaman', true)
+                            ->where('tipe_transaksi', 'pinjaman'); // Include loan disbursements
+                    });
+            })
             ->where('kategori', '!=', 'Pembelian Strawberi (Pending)')
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->sum('jumlah');
 
         $laba = $totalPemasukan - $totalPengeluaran;
 
-        // Get transactions for this period
+        // Get transactions for this period (including loan transactions)
         $transaksis = Transaksi::whereBetween('tanggal', [$startDate, $endDate])
-            ->where('is_pinjaman', false)
+            ->where(function ($query) use ($tipeTransaksi) {
+                if ($tipeTransaksi === 'biasa') {
+                    $query->where('is_pinjaman', false);
+                } elseif ($tipeTransaksi === 'pinjaman') {
+                    $query->where('is_pinjaman', true)
+                        ->where('tipe_transaksi', 'pinjaman');
+                } elseif ($tipeTransaksi === 'pengembalian') {
+                    $query->where('is_pinjaman', true)
+                        ->where('tipe_transaksi', 'pengembalian');
+                } else {
+                    // Semua transaksi - include both regular and loan transactions
+                    $query->where(function ($q) {
+                        $q->where('is_pinjaman', false)
+                            ->orWhere(function ($subQ) {
+                                $subQ->where('is_pinjaman', true)
+                                    ->whereIn('tipe_transaksi', ['pinjaman', 'pengembalian']);
+                            });
+                    });
+                }
+            })
             ->where('kategori', '!=', 'Pembelian Strawberi (Pending)')
             ->orderBy('tanggal', 'desc')
             ->paginate(10);
@@ -308,12 +507,12 @@ class LaporanController extends Controller
         $suppliers = Supplier::orderBy('nama')->get();
 
         // Get monthly stok data for chart
-        $monthlyStokData = Strawberi::selectRaw('
+        $monthlyStokData = Strawberi::selectRaw("
             YEAR(tanggal_masuk) as tahun,
             MONTH(tanggal_masuk) as bulan,
             jenis,
             SUM(stok_awal - stok_terjual - COALESCE(stok_rusak, 0) + COALESCE(stok_adjustment, 0)) as total
-        ')
+        ")
             ->where('is_posted', true)
             ->whereYear('tanggal_masuk', '>=', now()->subYear()->year)
             ->groupBy('tahun', 'bulan', 'jenis')
@@ -489,12 +688,12 @@ class LaporanController extends Controller
         $result = [];
 
         // Get monthly stok data for chart
-        $monthlyStokData = Strawberi::selectRaw('
+        $monthlyStokData = Strawberi::selectRaw("
             YEAR(tanggal_masuk) as tahun,
             MONTH(tanggal_masuk) as bulan,
             jenis,
             SUM(stok_awal - stok_terjual - COALESCE(stok_rusak, 0) + COALESCE(stok_adjustment, 0)) as total
-        ')
+        ")
             ->where('is_posted', true)
             ->whereYear('tanggal_masuk', '>=', now()->subYear()->year)
             ->groupBy('tahun', 'bulan', 'jenis')

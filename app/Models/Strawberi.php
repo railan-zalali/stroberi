@@ -21,6 +21,7 @@ class Strawberi extends Model
         'stok_terjual',
         'stok_rusak',
         'stok_adjustment',
+        'stok_terkunci',
         'harga_beli',
         'tanggal_masuk',
         'tanggal_kadaluarsa',
@@ -29,6 +30,7 @@ class Strawberi extends Model
         'adjustment_notes',
         'last_stock_update',
         'is_posted',
+        'is_locked',
     ];
 
     protected $casts = [
@@ -37,11 +39,13 @@ class Strawberi extends Model
         'stok_terjual' => 'decimal:2',
         'stok_rusak' => 'decimal:2',
         'stok_adjustment' => 'decimal:2',
+        'stok_terkunci' => 'decimal:2',
         'harga_beli' => 'decimal:2',
         'tanggal_masuk' => 'date',
         'tanggal_kadaluarsa' => 'date',
         'last_stock_update' => 'datetime',
         'is_posted' => 'boolean',
+        'is_locked' => 'boolean',
     ];
 
     protected static function boot()
@@ -55,10 +59,13 @@ class Strawberi extends Model
             if (empty($strawberi->stok_terjual)) {
                 $strawberi->stok_terjual = 0;
             }
+            if (empty($strawberi->stok_terkunci)) {
+                $strawberi->stok_terkunci = 0;
+            }
             if (empty($strawberi->batch_number)) {
                 $strawberi->batch_number = 'BTH-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -4));
             }
-            
+
             // Auto calculate expiry date based on type
             if (empty($strawberi->tanggal_kadaluarsa) && !empty($strawberi->tanggal_masuk)) {
                 $tanggalMasuk = Carbon::parse($strawberi->tanggal_masuk);
@@ -68,7 +75,7 @@ class Strawberi extends Model
                     $strawberi->tanggal_kadaluarsa = $tanggalMasuk->addMonth(1);
                 }
             }
-            
+
             $strawberi->last_stock_update = now();
         });
     }
@@ -84,6 +91,11 @@ class Strawberi extends Model
     }
 
     public function getStokTersisaAttribute()
+    {
+        return $this->stok_awal - $this->stok_terjual - $this->stok_rusak + $this->stok_adjustment - $this->stok_terkunci;
+    }
+
+    public function getStokTersediaAttribute()
     {
         return $this->stok_awal - $this->stok_terjual - $this->stok_rusak + $this->stok_adjustment;
     }
@@ -146,7 +158,7 @@ class Strawberi extends Model
             return 'Baik';
         }
     }
-    
+
     /**
      * Get remaining days until expiration
      *
@@ -156,7 +168,7 @@ class Strawberi extends Model
     {
         return now()->diffInDays($this->tanggal_kadaluarsa, false);
     }
-    
+
     /**
      * Get formatted expiration text
      *
@@ -165,7 +177,7 @@ class Strawberi extends Model
     public function getTextKadaluarsaAttribute()
     {
         $sisaHari = $this->sisa_hari_kadaluarsa;
-        
+
         if ($sisaHari < 0) {
             return 'Kadaluarsa ' . abs($sisaHari) . ' hari yang lalu';
         } elseif ($sisaHari == 0) {

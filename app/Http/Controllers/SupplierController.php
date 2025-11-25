@@ -28,10 +28,6 @@ class SupplierController extends Controller
             });
         }
 
-        if ($status) {
-            $query->where('status', $status);
-        }
-
         $suppliers = $query->orderBy('nama')->paginate(10)->withQueryString();
 
         return view('supplier.index', compact('suppliers'));
@@ -88,11 +84,12 @@ class SupplierController extends Controller
             ->orderBy('tanggal', 'desc')
             ->paginate(5);
 
-        // Ringkasan: tampilkan nilai pembelian pending agar 0 setelah diselesaikan
+        // Ringkasan: tampilkan nilai pembelian yang belum dibayar
         $pembayaranKeSupplier = Transaksi::where('supplier_id', $supplier->id)
             ->where('jenis', 'pengeluaran')
             ->where('is_pinjaman', false)
-            ->where('kategori', 'Pembelian Strawberi (Pending)')
+            ->where('kategori', 'Pembelian Strawberi')
+            ->where('is_paid', false)
             ->sum('jumlah');
 
         $pinjamanSupplier = Transaksi::where('supplier_id', $supplier->id)
@@ -107,16 +104,17 @@ class SupplierController extends Controller
 
         $sisaPinjaman = $supplier->sisa_pinjaman;
 
-        // Pending purchases (belum diposting ke pembukuan)
-        $pendingBatches = Transaksi::where('supplier_id', $supplier->id)
+        // Unpaid purchases (transaksi yang belum dibayar)
+        $unpaidPurchases = Transaksi::where('supplier_id', $supplier->id)
             ->where('jenis', 'pengeluaran')
             ->where('is_pinjaman', false)
-            ->where('kategori', 'Pembelian Strawberi (Pending)')
+            ->where('kategori', 'Pembelian Strawberi')
+            ->where('is_paid', false)
             ->orderBy('tanggal', 'desc')
             ->get();
 
-        $pendingTotalKg = 0;
-        $pendingTotalNilai = $pendingBatches->sum('jumlah');
+        $unpaidTotalKg = 0;
+        $unpaidTotalNilai = $unpaidPurchases->sum('jumlah');
 
         return view('supplier.show', compact(
             'supplier',
@@ -128,9 +126,9 @@ class SupplierController extends Controller
             'pembayaranKeSupplier',
             'pinjamanSupplier',
             'pembayaranDariSupplier',
-            'pendingBatches',
-            'pendingTotalKg',
-            'pendingTotalNilai'
+            'unpaidPurchases',
+            'unpaidTotalKg',
+            'unpaidTotalNilai'
         ));
     }
 
@@ -160,11 +158,60 @@ class SupplierController extends Controller
                 $tx->kategori = 'Pembelian Strawberi';
                 $tx->keterangan = trim(($tx->keterangan ?? '') . $auditNote);
                 $tx->save();
+
+                $batchNumber = null;
+                if (!empty($tx->keterangan)) {
+                    if (preg_match('/Batch:\s*([A-Z0-9\-]+)/', $tx->keterangan, $m)) {
+                        $batchNumber = $m[1];
+                    }
+                }
+                if ($batchNumber) {
+                    $batch = Strawberi::where('batch_number', $batchNumber)->first();
+                    if ($batch && !$batch->is_posted) {
+                        $batch->is_posted = true;
+                        $batch->save();
+                    }
+                }
             }
 
             DB::commit();
             return redirect()->route('supplier.show', $supplier)
                 ->with('success', 'Transaksi pembelian diselesaikan. Pembukuan diperbarui.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+    // Tandai transaksi pembelian sebagai sudah dibayar
+    public function markAsPaid(Supplier $supplier, Transaksi $transaksi)
+    {
+        // Validasi bahwa transaksi milik supplier ini
+        if ($transaksi->supplier_id !== $supplier->id) {
+            return redirect()->back()
+                ->with('error', 'Transaksi tidak valid untuk supplier ini.');
+        }
+
+        // Validasi bahwa ini adalah transaksi pembelian yang belum dibayar
+        if ($transaksi->jenis !== 'pengeluaran' || $transaksi->kategori !== 'Pembelian Strawberi' || $transaksi->is_paid) {
+            return redirect()->back()
+                ->with('error', 'Transaksi ini tidak dapat ditandai sebagai dibayar.');
+        }
+
+        DB::beginTransaction();
+        try {
+            $transaksi->is_paid = true;
+            $transaksi->paid_at = now();
+            $transaksi->paid_by = auth()->id();
+            $transaksi->save();
+
+            // Bebaskan stok yang terkunci karena pembayaran supplier sudah dilakukan
+            $this->unlockSupplierStock($supplier);
+
+            DB::commit();
+            return redirect()->route('supplier.show', $supplier)
+                ->with('success', 'Transaksi berhasil ditandai sebagai dibayar.');
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()
@@ -343,5 +390,46 @@ class SupplierController extends Controller
             'tipe_transaksi' => 'pinjaman',
             'is_pinjaman' => true,
         ]);
+    }
+
+    /**
+     * Bebaskan stok yang terkunci untuk supplier ini
+     * Karena pembayaran sudah dilakukan, semua stok yang terkunci harus dilepas
+     */
+    private function unlockSupplierStock(Supplier $supplier)
+    {
+        // Cari semua stok strawberi dari supplier ini yang sedang terkunci
+        $lockedStocks = Strawberi::where('supplier_id', $supplier->id)
+            ->where('is_locked', true)
+            ->where('stok_terkunci', '>', 0)
+            ->get();
+
+        foreach ($lockedStocks as $stock) {
+            // Kembalikan stok terkunci ke stok tersedia
+            $stock->stok_terkunci = 0;
+            $stock->is_locked = false;
+            $stock->save();
+        }
+
+        // Hapus session untuk transaksi yang sedang pending untuk supplier ini
+        // Ini akan memungkinkan transaksi penjualan yang tertunda untuk diselesaikan
+        $pendingTransactions = Transaksi::where('supplier_name', $supplier->nama)
+            ->where('jenis', 'pemasukan')
+            ->where('kategori', 'like', '%Penjualan%')
+            ->whereNull('is_paid') // Transaksi penjualan yang belum selesai
+            ->get();
+
+        foreach ($pendingTransactions as $transaction) {
+            // Hapus session data untuk transaksi ini
+            $sessionKey1 = 'stock_allocation_' . $transaction->id;
+            $sessionKey2 = 'stock_sale_' . $transaction->id;
+            
+            if (session()->has($sessionKey1)) {
+                session()->forget($sessionKey1);
+            }
+            if (session()->has($sessionKey2)) {
+                session()->forget($sessionKey2);
+            }
+        }
     }
 }

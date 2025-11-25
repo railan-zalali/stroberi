@@ -56,6 +56,30 @@
                 </div>
             </div>
 
+            <!-- Filter Section -->
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
+                <div class="p-6 border-b border-gray-200">
+                    <form method="GET" action="{{ route('laporan.show', $laporan) }}" class="flex flex-wrap gap-4">
+                        <div class="w-full md:w-1/4">
+                            <label for="tipe_transaksi" class="block text-sm font-medium text-gray-700">Tipe Transaksi</label>
+                            <select id="tipe_transaksi" name="tipe_transaksi"
+                                class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm">
+                                <option value="">Semua Transaksi</option>
+                                <option value="biasa" {{ request('tipe_transaksi') == 'biasa' ? 'selected' : '' }}>Transaksi Biasa</option>
+                                <option value="pinjaman" {{ request('tipe_transaksi') == 'pinjaman' ? 'selected' : '' }}>Pinjaman</option>
+                                <option value="pengembalian" {{ request('tipe_transaksi') == 'pengembalian' ? 'selected' : '' }}>Pengembalian Pinjaman</option>
+                            </select>
+                        </div>
+                        <div class="flex items-end">
+                            <button type="submit"
+                                class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 active:bg-green-800 focus:outline-none focus:border-green-800 focus:ring ring-green-300 disabled:opacity-25 transition ease-in-out duration-150">
+                                Filter
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             <!-- Charts Section -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <!-- Daily Chart -->

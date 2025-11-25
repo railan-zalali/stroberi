@@ -8,6 +8,7 @@ use App\Models\Transaksi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -175,6 +176,33 @@ class TransaksiController extends Controller
             'bukti_pembayaran' => $buktiPembayaranPath,
         ]);
 
+        // Sinkronisasi perubahan transaksi pembelian ke batch strawberi terkait
+        $isPembelianStrawberi = $transaksi->jenis === 'pengeluaran'
+            && in_array($transaksi->kategori, ['Pembelian Strawberi', 'Pembelian Strawberi (Pending)']);
+
+        if ($isPembelianStrawberi && !empty($transaksi->keterangan)) {
+            $batchNumber = null;
+            if (preg_match('/Batch:\s*([A-Z0-9\-]+)/', $transaksi->keterangan, $m)) {
+                $batchNumber = $m[1];
+            }
+            if ($batchNumber) {
+                $batch = Strawberi::where('batch_number', $batchNumber)->first();
+                if ($batch) {
+                    $kgDasar = (float) ($batch->stok_awal ?: $batch->jumlah);
+                    if ($kgDasar > 0) {
+                        $batch->harga_beli = (float) $transaksi->jumlah / $kgDasar;
+                    }
+                    if ($transaksi->tanggal) {
+                        $batch->tanggal_masuk = $transaksi->tanggal;
+                    }
+                    if ($transaksi->supplier_id) {
+                        $batch->supplier_id = $transaksi->supplier_id;
+                    }
+                    $batch->save();
+                }
+            }
+        }
+
         return redirect()->route('transaksi.show', $transaksi)
             ->with('success', 'Transaksi berhasil diperbarui');
     }
@@ -250,5 +278,123 @@ class TransaksiController extends Controller
         return $pdf->download($fileName);
     }
 
+    /**
+     * Complete stock transaction after payment confirmation
+     * This method finalizes stock movements by converting locked stock to sold stock
+     */
+    public function completeStockTransaction(Transaksi $transaksi)
+    {
+        // Check if this is a stock sale transaction
+        if ($transaksi->jenis !== 'pemasukan' || $transaksi->tipe_transaksi !== 'penjualan') {
+            return redirect()->back()
+                ->with('error', 'Transaksi ini bukan transaksi penjualan stok');
+        }
 
+        // Check if stock transaction is already completed
+        $sessionKey = 'stock_sale_' . $transaksi->id;
+        if (!session()->has($sessionKey)) {
+            return redirect()->back()
+                ->with('info', 'Transaksi stok sudah diselesaikan atau tidak memerlukan penyelesaian stok');
+        }
+
+        $stockData = session($sessionKey);
+
+        DB::beginTransaction();
+        try {
+            // Handle individual batch sale (from sell method)
+            if (isset($stockData['strawberi_id'])) {
+                $strawberi = Strawberi::find($stockData['strawberi_id']);
+                if ($strawberi && $strawberi->is_locked) {
+                    // Convert locked stock to sold stock
+                    $strawberi->stok_terjual += $stockData['jumlah'];
+                    $strawberi->stok_terkunci -= $stockData['jumlah'];
+                    if ($strawberi->stok_terkunci <= 0) {
+                        $strawberi->stok_terkunci = 0;
+                        $strawberi->is_locked = false;
+                    }
+                    $strawberi->save();
+                }
+            }
+            // Handle global sale (from sellGlobalStore method)
+            elseif (isset($stockData['allocations'])) {
+                foreach ($stockData['allocations'] as $allocation) {
+                    $strawberi = Strawberi::find($allocation['strawberi_id']);
+                    if ($strawberi && $strawberi->is_locked) {
+                        // Convert locked stock to sold stock
+                        $strawberi->stok_terjual += $allocation['jumlah'];
+                        $strawberi->stok_terkunci -= $allocation['jumlah'];
+                        if ($strawberi->stok_terkunci <= 0) {
+                            $strawberi->stok_terkunci = 0;
+                            $strawberi->is_locked = false;
+                        }
+                        $strawberi->save();
+                    }
+                }
+            }
+
+            // Remove session data
+            session()->forget($sessionKey);
+
+            DB::commit();
+
+            return redirect()->back()
+                ->with('success', 'Transaksi stok berhasil diselesaikan');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()
+                ->with('error', 'Gagal menyelesaikan transaksi stok: ' . $e->getMessage());
+        }
+    }
+
+    public function finalizeStock(Strawberi $strawberi)
+    {
+        // Check if there are pending stock allocations for this strawberry
+        $sessionKey = 'pending_stock_allocations';
+        if (!session()->has($sessionKey) || !isset(session($sessionKey)[$strawberi->id])) {
+            return redirect()->back()
+                ->with('error', 'Tidak ada alokasi stok yang tertunda untuk stok ini');
+        }
+
+        $allocatedAmount = session($sessionKey)[$strawberi->id];
+
+        DB::beginTransaction();
+        try {
+            // Validate that the allocated amount doesn't exceed available stock
+            $availableStock = $strawberi->stok_awal - $strawberi->stok_terjual - $strawberi->stok_rusak - $strawberi->stok_terkunci;
+
+            if ($allocatedAmount > $availableStock) {
+                DB::rollBack();
+                return redirect()->back()
+                    ->with('error', 'Jumlah alokasi melebihi stok yang tersedia');
+            }
+
+            // Convert locked stock to sold stock
+            $strawberi->stok_terjual += $allocatedAmount;
+            $strawberi->stok_terkunci = max(0, $strawberi->stok_terkunci - $allocatedAmount);
+
+            // If no more locked stock, unlock the batch
+            if ($strawberi->stok_terkunci <= 0) {
+                $strawberi->stok_terkunci = 0;
+                $strawberi->is_locked = false;
+            }
+
+            // Mark as posted since it's now finalized
+            $strawberi->is_posted = true;
+            $strawberi->save();
+
+            // Remove this allocation from session
+            $allocations = session($sessionKey);
+            unset($allocations[$strawberi->id]);
+            session([$sessionKey => $allocations]);
+
+            DB::commit();
+
+            return redirect()->back()
+                ->with('success', 'Stok berhasil diselesaikan');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()
+                ->with('error', 'Gagal menyelesaikan stok: ' . $e->getMessage());
+        }
+    }
 }
