@@ -63,6 +63,9 @@ Route::middleware(['auth'])->group(function () {
     // Finalize stock (for pending stock allocations)
     Route::post('/transaksi/finalize-stock/{strawberi}', [TransaksiController::class, 'finalizeStock'])->name('transaksi.finalize-stock');
 
+    // Mark transaction as completed
+    Route::post('/transaksi/{transaksi}/mark-as-completed', [TransaksiController::class, 'markAsCompleted'])->name('transaksi.mark-as-completed');
+
     // Transaksi routes
     Route::resource('transaksi', TransaksiController::class);
 

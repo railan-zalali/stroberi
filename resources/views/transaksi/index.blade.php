@@ -222,6 +222,10 @@
                                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Keterangan
                                     </th>
+                                    {{-- <th scope="col"
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Status
+                                    </th> --}}
                                     <th scope="col"
                                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Aksi
@@ -263,6 +267,23 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             {{ Str::limit($transaksi->keterangan, 50) ?? '-' }}
                                         </td>
+                                        {{-- <td class="px-6 py-4 whitespace-nowrap">
+                                            @if ($transaksi->jenis == 'pemasukan' && $transaksi->kategori == 'Penjualan Strawberi')
+                                                @if ($transaksi->is_completed)
+                                                    <span
+                                                        class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                                        Selesai
+                                                    </span>
+                                                @else
+                                                    <span
+                                                        class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                                        Belum Selesai
+                                                    </span>
+                                                @endif
+                                            @else
+                                                <span class="text-gray-400">-</span>
+                                            @endif
+                                        </td> --}}
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <div class="flex space-x-2">
                                                 <a href="{{ route('transaksi.show', $transaksi) }}"
@@ -276,15 +297,35 @@
                                                             d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                                     </svg>
                                                 </a>
-                                                <a href="{{ route('transaksi.edit', $transaksi) }}"
-                                                    class="text-indigo-600 hover:text-indigo-900">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            stroke-width="2"
-                                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                    </svg>
-                                                </a>
+                                                @if (!($transaksi->jenis == 'pemasukan' && $transaksi->kategori == 'Penjualan Strawberi' && $transaksi->is_completed))
+                                                    <a href="{{ route('transaksi.edit', $transaksi) }}"
+                                                        class="text-indigo-600 hover:text-indigo-900">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+                                                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                        </svg>
+                                                    </a>
+                                                @endif
+                                                @if ($transaksi->jenis == 'pemasukan' && $transaksi->kategori == 'Penjualan Strawberi' && !$transaksi->is_completed)
+                                                    <form
+                                                        action="{{ route('transaksi.mark-as-completed', $transaksi) }}"
+                                                        method="POST" class="inline"
+                                                        onsubmit="return confirm('Apakah Anda yakin ingin menandai transaksi ini sebagai selesai? Transaksi yang sudah selesai tidak dapat diubah.');">
+                                                        @csrf
+                                                        <button type="submit"
+                                                            class="text-green-600 hover:text-green-900"
+                                                            title="Tandai Selesai">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+                                                                fill="none" viewBox="0 0 24 24"
+                                                                stroke="currentColor">
+                                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                                    stroke-width="2" d="M5 13l4 4L19 7" />
+                                                            </svg>
+                                                        </button>
+                                                    </form>
+                                                @endif
                                                 <form action="{{ route('transaksi.destroy', $transaksi) }}"
                                                     method="POST" class="inline"
                                                     onsubmit="return confirm('Apakah Anda yakin ingin menghapus data ini?');">

@@ -24,6 +24,9 @@ class Transaksi extends Model
         'is_paid',
         'paid_at',
         'paid_by',
+        'is_completed',
+        'completed_at',
+        'completed_by',
     ];
 
     protected $casts = [
@@ -32,6 +35,8 @@ class Transaksi extends Model
         'is_pinjaman' => 'boolean',
         'is_paid' => 'boolean',
         'paid_at' => 'datetime',
+        'is_completed' => 'boolean',
+        'completed_at' => 'datetime',
     ];
 
     public function user()
@@ -42,6 +47,11 @@ class Transaksi extends Model
     public function paidByUser()
     {
         return $this->belongsTo(User::class, 'paid_by');
+    }
+
+    public function completedByUser()
+    {
+        return $this->belongsTo(User::class, 'completed_by');
     }
 
     public function supplier()

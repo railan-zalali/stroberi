@@ -69,41 +69,51 @@
                     </div>
                 </div>
 
-                <!-- Grade Stok -->
+                <!-- Rincian Stok per Jenis & Grade (vertikal) -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 border-b border-gray-200">
-                        <h3 class="text-lg font-medium text-gray-900 mb-3">Berdasarkan Grade</h3>
+                        <h3 class="text-lg font-medium text-gray-900 mb-3">Rincian Jenis & Grade</h3>
                         <div class="space-y-4">
-                            <!-- Grade A -->
                             <div class="flex items-center">
-                                <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">
-                                    <span class="font-bold">A</span>
-                                </div>
+                                <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">Segar A</div>
                                 <div>
-                                    <p class="text-gray-500 text-sm">Grade A</p>
-                                    <p class="text-xl font-bold text-gray-700">{{ $stokGradeA ?? 0 }} kg</p>
+                                    <p class="text-gray-500 text-sm">Stok segar grade A</p>
+                                    <p class="text-xl font-bold text-gray-700">{{ $stokSegarA ?? 0 }} kg</p>
                                 </div>
                             </div>
-
-                            <!-- Grade B -->
                             <div class="flex items-center">
-                                <div class="p-3 rounded-full bg-yellow-100 text-yellow-600 mr-4">
-                                    <span class="font-bold">B</span>
-                                </div>
+                                <div class="p-3 rounded-full bg-yellow-100 text-yellow-600 mr-4">Segar B</div>
                                 <div>
-                                    <p class="text-gray-500 text-sm">Grade B</p>
-                                    <p class="text-xl font-bold text-gray-700">{{ $stokGradeB ?? 0 }} kg</p>
+                                    <p class="text-gray-500 text-sm">Stok segar grade B</p>
+                                    <p class="text-xl font-bold text-gray-700">{{ $stokSegarB ?? 0 }} kg</p>
                                 </div>
                             </div>
-
-                            <!-- Grade C -->
                             <div class="flex items-center">
-                                <div class="p-3 rounded-full bg-red-100 text-red-600 mr-4">
-                                    <span class="font-bold">C</span>
-                                </div>
+                                <div class="p-3 rounded-full bg-red-100 text-red-600 mr-4">Segar C</div>
                                 <div>
-                                    <p class="text-gray-500 text-sm">Grade C</p>
-                                    <p class="text-xl font-bold text-gray-700">{{ $stokGradeC ?? 0 }} kg</p>
+                                    <p class="text-gray-500 text-sm">Stok segar grade C</p>
+                                    <p class="text-xl font-bold text-gray-700">{{ $stokSegarC ?? 0 }} kg</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">Beku A</div>
+                                <div>
+                                    <p class="text-gray-500 text-sm">Stok beku grade A</p>
+                                    <p class="text-xl font-bold text-gray-700">{{ $stokBekuA ?? 0 }} kg</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">Beku B</div>
+                                <div>
+                                    <p class="text-gray-500 text-sm">Stok beku grade B</p>
+                                    <p class="text-xl font-bold text-gray-700">{{ $stokBekuB ?? 0 }} kg</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">Beku C</div>
+                                <div>
+                                    <p class="text-gray-500 text-sm">Stok beku grade C</p>
+                                    <p class="text-xl font-bold text-gray-700">{{ $stokBekuC ?? 0 }} kg</p>
                                 </div>
                             </div>
                         </div>

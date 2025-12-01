@@ -6,16 +6,19 @@
                 {{ __('Detail Stok Strawberi') }}
             </h2>
             <div class="flex space-x-2">
-                @unless($strawberi->is_posted)
+                @unless (isset($lockedBecausePaidAndZero) && $lockedBecausePaidAndZero)
                     <a href="{{ route('strawberi.edit', $strawberi) }}"
                         class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-800 focus:outline-none focus:border-indigo-800 focus:ring ring-indigo-300 disabled:opacity-25 transition ease-in-out duration-150">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                         {{ __('Edit') }}
                     </a>
                 @else
-                    <span class="inline-flex items-center px-4 py-2 bg-gray-200 border border-transparent rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest">
+                    <span
+                        class="inline-flex items-center px-4 py-2 bg-gray-200 border border-transparent rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest">
                         Terkunci
                     </span>
                 @endunless
@@ -36,6 +39,20 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 border-b border-gray-200">
+                    <!-- Status Pembayaran -->
+                    <div
+                        class="mb-4 p-3 {{ $paymentStatus == 'Sudah Dibayar' ? 'bg-green-100 border-green-300 text-green-700' : 'bg-yellow-100 border-yellow-300 text-yellow-700' }} border rounded text-sm">
+                        <strong>Status Pembayaran:</strong> {{ $paymentStatus }}
+                        @if ($paymentStatus == 'Belum Dibayar')
+                            <span class="ml-2 text-xs">(Stok masih bisa diedit)</span>
+                        @endif
+                    </div>
+
+                    @if (isset($lockedBecausePaidAndZero) && $lockedBecausePaidAndZero)
+                        <div class="mb-4 p-3 bg-gray-100 border border-gray-300 rounded text-sm text-gray-700">
+                            Stok terkunci permanen karena stok sudah 0 dan pembelian telah ditandai dibayar.
+                        </div>
+                    @endif
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- Informasi Utama -->
                         <div class="bg-white p-6 rounded-lg shadow-md">

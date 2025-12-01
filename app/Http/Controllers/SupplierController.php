@@ -201,17 +201,33 @@ class SupplierController extends Controller
 
         DB::beginTransaction();
         try {
+            // Simpan status sebelumnya untuk log
+            $oldStatus = $transaksi->is_paid ? 'Sudah Dibayar' : 'Belum Dibayar';
+
             $transaksi->is_paid = true;
             $transaksi->paid_at = now();
             $transaksi->paid_by = auth()->id();
             $transaksi->save();
 
-            // Bebaskan stok yang terkunci karena pembayaran supplier sudah dilakukan
-            $this->unlockSupplierStock($supplier);
+            // Buat log audit untuk perubahan status pembayaran
+            \App\Models\AuditLog::create([
+                'user_id' => auth()->id(),
+                'action' => 'update_payment_status',
+                'table_name' => 'transaksis',
+                'record_id' => $transaksi->id,
+                'old_values' => json_encode(['is_paid' => false, 'status' => 'Belum Dibayar']),
+                'new_values' => json_encode(['is_paid' => true, 'status' => 'Sudah Dibayar']),
+                'description' => "Transaksi pembelian ID {$transaksi->id} ditandai sebagai dibayar oleh " . auth()->user()->name,
+            ]);
 
             DB::commit();
+
+            // Kirim notifikasi ke user yang bersangkutan
+            $user = auth()->user();
+            $user->notify(new \App\Notifications\PaymentStatusChanged($transaksi, 'Sudah Dibayar'));
+
             return redirect()->route('supplier.show', $supplier)
-                ->with('success', 'Transaksi berhasil ditandai sebagai dibayar.');
+                ->with('success', 'Transaksi berhasil ditandai sebagai dibayar. Log audit telah dibuat.');
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()
@@ -423,7 +439,7 @@ class SupplierController extends Controller
             // Hapus session data untuk transaksi ini
             $sessionKey1 = 'stock_allocation_' . $transaction->id;
             $sessionKey2 = 'stock_sale_' . $transaction->id;
-            
+
             if (session()->has($sessionKey1)) {
                 session()->forget($sessionKey1);
             }

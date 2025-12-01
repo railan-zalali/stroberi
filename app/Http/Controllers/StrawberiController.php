@@ -174,26 +174,57 @@ class StrawberiController extends Controller
 
     public function show(Strawberi $strawberi)
     {
-        return view('strawberi.show', compact('strawberi'));
+        // Cek apakah pembelian batch ini sudah dibayar
+        $hasPaidPurchase = Transaksi::where('jenis', 'pengeluaran')
+            ->where('kategori', 'Pembelian Strawberi')
+            ->where('is_paid', true)
+            ->where('keterangan', 'like', "%Batch: {$strawberi->batch_number}%")
+            ->exists();
+
+        // Stok terkunci permanen hanya jika sudah dibayar dan stok habis
+        $lockedBecausePaidAndZero = $hasPaidPurchase && ($strawberi->stok_tersisa <= 0);
+
+        // Status pembayaran untuk ditampilkan
+        $paymentStatus = $hasPaidPurchase ? 'Sudah Dibayar' : 'Belum Dibayar';
+
+        return view('strawberi.show', compact('strawberi', 'lockedBecausePaidAndZero', 'paymentStatus'));
     }
 
     public function edit(Strawberi $strawberi)
     {
+        // Cek apakah pembelian batch ini sudah dibayar
+        $hasPaidPurchase = Transaksi::where('jenis', 'pengeluaran')
+            ->where('kategori', 'Pembelian Strawberi')
+            ->where('is_paid', true)
+            ->where('keterangan', 'like', "%Batch: {$strawberi->batch_number}%")
+            ->exists();
+
+        // Stok terkunci permanen hanya jika sudah dibayar dan stok habis
+        $lockedBecausePaidAndZero = $hasPaidPurchase && ($strawberi->stok_tersisa <= 0);
+
+        // Status pembayaran untuk ditampilkan
+        $paymentStatus = $hasPaidPurchase ? 'Sudah Dibayar' : 'Belum Dibayar';
+
         $suppliers = Supplier::all();
-        return view('strawberi.edit', compact('strawberi', 'suppliers'));
+        return view('strawberi.edit', compact('strawberi', 'suppliers', 'lockedBecausePaidAndZero', 'paymentStatus'));
     }
 
     public function update(Request $request, Strawberi $strawberi)
     {
-        if ($strawberi->is_posted) {
-            return redirect()->back()
-                ->with('error', 'Stok ini sudah diposting/dituntaskan dan tidak dapat diedit lagi')
-                ->withInput();
-        }
+        // Cek apakah pembelian batch ini sudah dibayar
+        $hasPaidPurchase = Transaksi::where('jenis', 'pengeluaran')
+            ->where('kategori', 'Pembelian Strawberi')
+            ->where('is_paid', true)
+            ->where('keterangan', 'like', "%Batch: {$strawberi->batch_number}%")
+            ->exists();
 
-        if ($strawberi->is_locked) {
+        // Stok terkunci permanen hanya jika sudah dibayar dan stok habis
+        $lockedBecausePaidAndZero = $hasPaidPurchase && ($strawberi->stok_tersisa <= 0);
+
+        // Stok hanya bisa dikunci jika sudah dibayar dan stok habis
+        if ($lockedBecausePaidAndZero) {
             return redirect()->back()
-                ->with('error', 'Stok ini sedang dikunci untuk transaksi dan tidak dapat diedit')
+                ->with('error', 'Stok ini terkunci permanen karena sudah dibayar dan stok habis')
                 ->withInput();
         }
         $request->validate([
@@ -403,7 +434,6 @@ class StrawberiController extends Controller
             // Ambil batch sesuai preferensi grade (FEFO)
             $batches = Strawberi::where('jenis', $request->jenis)
                 ->where('is_posted', true)
-                ->where('is_locked', false)
                 ->where('tanggal_kadaluarsa', '>=', now())
                 ->when($request->preferensi_grade && $request->preferensi_grade !== 'campur', function ($q) use ($request) {
                     $q->where('grade', strtoupper($request->preferensi_grade));
@@ -424,17 +454,15 @@ class StrawberiController extends Controller
             foreach ($batches as $batch) {
                 if ($remaining <= 0) break;
 
-                // Gunakan stok tersedia (tidak termasuk yang terkunci)
-                $available = $batch->stok_tersedia - $batch->stok_terkunci;
+                // Gunakan stok tersisa aktual
+                $available = max(0, (float)$batch->stok_tersisa);
                 if ($available <= 0) continue;
 
                 $take = min($available, $remaining);
                 if ($take <= 0) continue;
 
-                // Kunci stok untuk transaksi ini
-                $batch->stok_terkunci += $take;
-                $batch->is_locked = true;
-                $batch->save();
+                // Catat penjualan langsung (tanpa penguncian sementara)
+                $batch->recordStockMovement('sale', $take);
 
                 // Catat alokasi
                 $allocated[] = [
@@ -481,8 +509,7 @@ class StrawberiController extends Controller
                 'is_pinjaman' => false,
             ]);
 
-            // Simpan informasi alokasi untuk diproses setelah transaksi selesai
-            session(['stock_allocation_' . $transaksi->id => $allocated]);
+            // Tidak menyimpan alokasi stok ke session; stok sudah dikurangi saat penjualan
 
             DB::commit();
 
@@ -520,13 +547,6 @@ class StrawberiController extends Controller
                 ->withInput();
         }
 
-        // Cek apakah stok sedang dikunci
-        if ($strawberi->is_locked) {
-            return redirect()->back()
-                ->with('error', 'Stok sedang dalam proses transaksi. Silakan coba lagi nanti.')
-                ->withInput();
-        }
-
         $maxSell = $strawberi->stok_tersisa;
         if ($maxSell <= 0) {
             return redirect()->back()
@@ -545,10 +565,8 @@ class StrawberiController extends Controller
 
         DB::beginTransaction();
         try {
-            // Kunci stok untuk transaksi ini
-            $strawberi->stok_terkunci += $request->jumlah_jual;
-            $strawberi->is_locked = true;
-            $strawberi->save();
+            // Catat penjualan langsung
+            $strawberi->recordStockMovement('sale', (float)$request->jumlah_jual);
 
             // Handle file upload
             $buktiPembayaranPath = null;
@@ -570,11 +588,7 @@ class StrawberiController extends Controller
                 'is_pinjaman' => false,
             ]);
 
-            // Simpan informasi untuk menyelesaikan transaksi stok
-            session(['stock_sale_' . $transaksi->id => [
-                'strawberi_id' => $strawberi->id,
-                'jumlah' => $request->jumlah_jual
-            ]]);
+            // Tidak menyimpan alokasi stok ke session; stok sudah dikurangi saat penjualan
 
             DB::commit();
 
@@ -625,13 +639,29 @@ class StrawberiController extends Controller
 
     private function hitungStokTerkunci($jenis, $grade)
     {
-        // Convert grade to uppercase to match database storage
+        // Locked dalam konteks ini hanya untuk stok yang sudah habis dan pembelian dibayar
         $grade = strtoupper($grade);
 
-        return Strawberi::where('jenis', $jenis)
+        $strawberis = Strawberi::where('jenis', $jenis)
             ->where('grade', $grade)
             ->where('is_posted', true)
-            ->where('is_locked', true)
-            ->sum('stok_terkunci');
+            ->get();
+
+        $lockedTotal = 0;
+        foreach ($strawberis as $s) {
+            if ($s->stok_tersisa <= 0) {
+                $hasPaidPurchase = Transaksi::where('jenis', 'pengeluaran')
+                    ->where('kategori', 'Pembelian Strawberi')
+                    ->where('is_paid', true)
+                    ->where('keterangan', 'like', "%Batch: {$s->batch_number}%")
+                    ->exists();
+                if ($hasPaidPurchase) {
+                    // Tampilkan sebagai terkunci dengan nilai 0 (habis). Agar tidak membingungkan, tidak menambah jumlah.
+                    // Jika ingin menampilkan jumlah terkunci historis, bisa gunakan stok_awal.
+                    $lockedTotal += 0;
+                }
+            }
+        }
+        return $lockedTotal;
     }
 }

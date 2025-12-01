@@ -112,6 +112,25 @@ class TransaksiController extends Controller
 
         $transaksi->save();
 
+        // Buat log audit untuk transaksi baru
+        \App\Models\AuditLog::create([
+            'user_id' => auth()->id(),
+            'action' => 'create_transaction',
+            'table_name' => 'transaksis',
+            'record_id' => $transaksi->id,
+            'old_values' => json_encode([]),
+            'new_values' => json_encode([
+                'jenis' => $transaksi->jenis,
+                'jumlah' => $transaksi->jumlah,
+                'tanggal' => $transaksi->tanggal->format('Y-m-d'),
+                'kategori' => $transaksi->kategori,
+                'keterangan' => $transaksi->keterangan,
+                'tipe_transaksi' => $transaksi->tipe_transaksi,
+                'is_pinjaman' => $transaksi->is_pinjaman,
+            ]),
+            'description' => "Transaksi baru ID {$transaksi->id} dibuat oleh " . auth()->user()->name,
+        ]);
+
         return redirect()->route('transaksi.index')
             ->with('success', 'Transaksi berhasil ditambahkan');
     }
@@ -130,11 +149,30 @@ class TransaksiController extends Controller
 
     public function edit(Transaksi $transaksi)
     {
+        if ($transaksi->is_paid) {
+            return redirect()->route('transaksi.show', $transaksi)
+                ->with('error', 'Transaksi sudah dibayar dan tidak dapat diedit');
+        }
+
+        if ($transaksi->is_completed) {
+            return redirect()->route('transaksi.show', $transaksi)
+                ->with('error', 'Transaksi sudah selesai dan tidak dapat diedit');
+        }
+
         return view('transaksi.edit', compact('transaksi'));
     }
 
     public function update(Request $request, Transaksi $transaksi)
     {
+        if ($transaksi->is_paid) {
+            return redirect()->route('transaksi.show', $transaksi)
+                ->with('error', 'Transaksi sudah dibayar dan tidak dapat diubah');
+        }
+
+        if ($transaksi->is_completed) {
+            return redirect()->route('transaksi.show', $transaksi)
+                ->with('error', 'Transaksi sudah selesai dan tidak dapat diubah');
+        }
         $request->validate([
             'jenis' => 'required|in:pemasukan,pengeluaran',
             'jumlah' => 'required|numeric|min:0',
@@ -164,6 +202,19 @@ class TransaksiController extends Controller
             $buktiPembayaranPath = $request->file('bukti_pembayaran')->store('bukti_pembayaran', 'public');
         }
 
+        // Simpan data lama untuk audit log
+        $oldData = [
+            'jenis' => $transaksi->jenis,
+            'jumlah' => $transaksi->jumlah,
+            'tanggal' => $transaksi->tanggal->format('Y-m-d'),
+            'kategori' => $transaksi->kategori,
+            'keterangan' => $transaksi->keterangan,
+            'tipe_transaksi' => $transaksi->tipe_transaksi,
+            'is_pinjaman' => $transaksi->is_pinjaman,
+            'supplier_name' => $transaksi->supplier_name,
+            'bukti_pembayaran' => $transaksi->bukti_pembayaran,
+        ];
+
         $transaksi->update([
             'jenis' => $request->jenis,
             'jumlah' => $request->jumlah,
@@ -175,6 +226,41 @@ class TransaksiController extends Controller
             'supplier_name' => $request->has('supplier_name') ? $request->supplier_name : $transaksi->supplier_name,
             'bukti_pembayaran' => $buktiPembayaranPath,
         ]);
+
+        // Buat log audit untuk perubahan transaksi
+        $changes = [];
+        $newData = [
+            'jenis' => $transaksi->jenis,
+            'jumlah' => $transaksi->jumlah,
+            'tanggal' => $transaksi->tanggal->format('Y-m-d'),
+            'kategori' => $transaksi->kategori,
+            'keterangan' => $transaksi->keterangan,
+            'tipe_transaksi' => $transaksi->tipe_transaksi,
+            'is_pinjaman' => $transaksi->is_pinjaman,
+            'supplier_name' => $transaksi->supplier_name,
+            'bukti_pembayaran' => $transaksi->bukti_pembayaran,
+        ];
+
+        foreach ($newData as $key => $newValue) {
+            if ($oldData[$key] !== $newValue) {
+                $changes[$key] = [
+                    'old' => $oldData[$key],
+                    'new' => $newValue
+                ];
+            }
+        }
+
+        if (!empty($changes)) {
+            \App\Models\AuditLog::create([
+                'user_id' => auth()->id(),
+                'action' => 'update_transaction',
+                'table_name' => 'transaksis',
+                'record_id' => $transaksi->id,
+                'old_values' => json_encode($oldData),
+                'new_values' => json_encode($newData),
+                'description' => "Transaksi ID {$transaksi->id} diperbarui oleh " . auth()->user()->name . '. Perubahan: ' . implode(', ', array_keys($changes)),
+            ]);
+        }
 
         // Sinkronisasi perubahan transaksi pembelian ke batch strawberi terkait
         $isPembelianStrawberi = $transaksi->jenis === 'pengeluaran'
@@ -209,6 +295,25 @@ class TransaksiController extends Controller
 
     public function destroy(Transaksi $transaksi)
     {
+        // Buat log audit sebelum menghapus
+        \App\Models\AuditLog::create([
+            'user_id' => auth()->id(),
+            'action' => 'delete_transaction',
+            'table_name' => 'transaksis',
+            'record_id' => $transaksi->id,
+            'old_values' => json_encode([
+                'jenis' => $transaksi->jenis,
+                'jumlah' => $transaksi->jumlah,
+                'tanggal' => $transaksi->tanggal->format('Y-m-d'),
+                'kategori' => $transaksi->kategori,
+                'keterangan' => $transaksi->keterangan,
+                'tipe_transaksi' => $transaksi->tipe_transaksi,
+                'is_pinjaman' => $transaksi->is_pinjaman,
+            ]),
+            'new_values' => json_encode([]),
+            'description' => "Transaksi ID {$transaksi->id} dihapus oleh " . auth()->user()->name,
+        ]);
+
         $transaksi->delete();
         return redirect()->route('transaksi.index')
             ->with('success', 'Transaksi berhasil dihapus');
@@ -332,6 +437,10 @@ class TransaksiController extends Controller
                 }
             }
 
+            // Tandai transaksi sebagai dibayar (konfirmasi selesai)
+            $transaksi->is_paid = true;
+            $transaksi->save();
+
             // Remove session data
             session()->forget($sessionKey);
 
@@ -395,6 +504,52 @@ class TransaksiController extends Controller
             DB::rollBack();
             return redirect()->back()
                 ->with('error', 'Gagal menyelesaikan stok: ' . $e->getMessage());
+        }
+    }
+
+    public function markAsCompleted(Transaksi $transaksi)
+    {
+        // Validasi bahwa transaksi ini adalah transaksi penjualan strawberi
+        if (!($transaksi->jenis == 'pemasukan' && $transaksi->kategori == 'Penjualan Strawberi')) {
+            return redirect()->back()
+                ->with('error', 'Hanya transaksi penjualan strawberi yang dapat ditandai sebagai selesai');
+        }
+
+        // Validasi bahwa transaksi belum selesai
+        if ($transaksi->is_completed) {
+            return redirect()->back()
+                ->with('error', 'Transaksi ini sudah selesai');
+        }
+
+        DB::beginTransaction();
+        try {
+            // Simpan status sebelumnya untuk log
+            $oldStatus = $transaksi->is_completed ? 'Selesai' : 'Belum Selesai';
+
+            $transaksi->is_completed = true;
+            $transaksi->completed_at = now();
+            $transaksi->completed_by = auth()->id();
+            $transaksi->save();
+
+            // Buat log audit untuk perubahan status
+            \App\Models\AuditLog::create([
+                'user_id' => auth()->id(),
+                'action' => 'complete_transaction',
+                'table_name' => 'transaksis',
+                'record_id' => $transaksi->id,
+                'old_values' => json_encode(['is_completed' => false, 'status' => 'Belum Selesai']),
+                'new_values' => json_encode(['is_completed' => true, 'status' => 'Selesai']),
+                'description' => "Transaksi penjualan ID {$transaksi->id} ditandai sebagai selesai oleh " . auth()->user()->name,
+            ]);
+
+            DB::commit();
+
+            return redirect()->back()
+                ->with('success', 'Transaksi berhasil ditandai sebagai selesai');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
 }

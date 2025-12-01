@@ -43,7 +43,7 @@
                                         <div class="w-32 text-sm font-medium text-gray-900">{{ $supplier->nama }}</div>
                                         <div class="flex-1">
                                             <div class="overflow-hidden h-2 text-xs flex rounded bg-blue-200">
-                                                <div style="width: {{ ($supplier->total_kg / $topSuppliersByVolume->max('total_kg')) * 100 }}%"
+                                                <div style="width: {{ ($topSuppliersByVolume->max('total_kg') > 0 ? ($supplier->total_kg / $topSuppliersByVolume->max('total_kg')) * 100 : 0) }}%"
                                                     class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-600">
                                                 </div>
                                             </div>
@@ -73,7 +73,7 @@
                                         <div class="w-32 text-sm font-medium text-gray-900">{{ $supplier->nama }}</div>
                                         <div class="flex-1">
                                             <div class="overflow-hidden h-2 text-xs flex rounded bg-green-200">
-                                                <div style="width: {{ ($supplier->total_nilai / $topSuppliersByValue->max('total_nilai')) * 100 }}%"
+                                                <div style="width: {{ ($topSuppliersByValue->max('total_nilai') > 0 ? ($supplier->total_nilai / $topSuppliersByValue->max('total_nilai')) * 100 : 0) }}%"
                                                     class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-green-600">
                                                 </div>
                                             </div>
