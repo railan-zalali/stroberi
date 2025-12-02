@@ -42,17 +42,19 @@
                             d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                     </svg>
                 </button>
-                @if (Route::has('login'))
-                    <a href="{{ route('login') }}"
-                        class="hidden sm:inline-flex px-3 py-2 text-sm font-medium rounded-md border border-gray-300 hover:bg-gray-50">Masuk</a>
-                @endif
-                @if (Route::has('register'))
-                    <a href="{{ route('register') }}"
-                        class="inline-flex px-4 py-2 text-sm font-semibold rounded-md bg-red-600 text-white hover:bg-red-700">Daftar</a>
-                @endif
+                @guest
+                    @if (Route::has('login'))
+                        <a href="{{ route('login') }}"
+                            class="hidden sm:inline-flex px-3 py-2 text-sm font-medium rounded-md border border-gray-300 hover:bg-gray-50">Masuk</a>
+                    @endif
+                    @if (Route::has('register'))
+                        <a href="{{ route('register') }}"
+                            class="inline-flex px-4 py-2 text-sm font-semibold rounded-md bg-red-600 text-white hover:bg-red-700">Register</a>
+                    @endif
+                @endguest
                 @auth
                     <a href="{{ route('dashboard') }}"
-                        class="hidden sm:inline-flex px-3 py-2 text-sm font-medium rounded-md border border-gray-300 hover:bg-gray-50">Dashboard</a>
+                        class="inline-flex px-4 py-2 text-sm font-semibold rounded-md bg-red-600 text-white hover:bg-red-700">Dashboard</a>
                 @endauth
             </div>
         </div>
