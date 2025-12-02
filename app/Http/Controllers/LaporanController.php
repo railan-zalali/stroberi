@@ -45,6 +45,7 @@ class LaporanController extends Controller
 
         $bulan = $request->bulan;
         $tahun = $request->tahun;
+        $tipeTransaksi = $request->input('tipe_transaksi', 'semua');
 
         // Get first and last day of month
         $startDate = Carbon::parse("$tahun-$bulan-01")->startOfMonth();

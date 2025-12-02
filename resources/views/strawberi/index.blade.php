@@ -31,12 +31,11 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <!-- Stats Overview -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                <!-- Jenis Stok -->
+                <!-- Card: Strawberi Segar -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 border-b border-gray-200">
-                        <h3 class="text-lg font-medium text-gray-900 mb-3">Berdasarkan Jenis</h3>
+                        <h3 class="text-lg font-medium text-gray-900 mb-3">Strawberi Segar</h3>
                         <div class="space-y-4">
-                            <!-- Stok Segar -->
                             <div class="flex items-center">
                                 <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
@@ -46,12 +45,40 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <p class="text-gray-500 text-sm">Stok Segar</p>
+                                    <p class="text-gray-500 text-sm">Jumlah</p>
                                     <p class="text-xl font-bold text-gray-700">{{ $stokSegar ?? 0 }} kg</p>
                                 </div>
                             </div>
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">Grade A</div>
+                                <div>
+                                    <p class="text-gray-500 text-sm">Stok segar grade A</p>
+                                    <p class="text-xl font-bold text-gray-700">{{ $stokSegarA ?? 0 }} kg</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-yellow-100 text-yellow-600 mr-4">Grade B</div>
+                                <div>
+                                    <p class="text-gray-500 text-sm">Stok segar grade B</p>
+                                    <p class="text-xl font-bold text-gray-700">{{ $stokSegarB ?? 0 }} kg</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-red-100 text-red-600 mr-4">Grade C</div>
+                                <div>
+                                    <p class="text-gray-500 text-sm">Stok segar grade C</p>
+                                    <p class="text-xl font-bold text-gray-700">{{ $stokSegarC ?? 0 }} kg</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-                            <!-- Stok Beku -->
+                <!-- Card: Strawberi Beku -->
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                    <div class="p-6 border-b border-gray-200">
+                        <h3 class="text-lg font-medium text-gray-900 mb-3">Strawberi Beku</h3>
+                        <div class="space-y-4">
                             <div class="flex items-center">
                                 <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
@@ -61,56 +88,26 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <p class="text-gray-500 text-sm">Stok Beku</p>
+                                    <p class="text-gray-500 text-sm">Jumlah</p>
                                     <p class="text-xl font-bold text-gray-700">{{ $stokBeku ?? 0 }} kg</p>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Rincian Stok per Jenis & Grade (vertikal) -->
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6 border-b border-gray-200">
-                        <h3 class="text-lg font-medium text-gray-900 mb-3">Rincian Jenis & Grade</h3>
-                        <div class="space-y-4">
                             <div class="flex items-center">
-                                <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">Segar A</div>
-                                <div>
-                                    <p class="text-gray-500 text-sm">Stok segar grade A</p>
-                                    <p class="text-xl font-bold text-gray-700">{{ $stokSegarA ?? 0 }} kg</p>
-                                </div>
-                            </div>
-                            <div class="flex items-center">
-                                <div class="p-3 rounded-full bg-yellow-100 text-yellow-600 mr-4">Segar B</div>
-                                <div>
-                                    <p class="text-gray-500 text-sm">Stok segar grade B</p>
-                                    <p class="text-xl font-bold text-gray-700">{{ $stokSegarB ?? 0 }} kg</p>
-                                </div>
-                            </div>
-                            <div class="flex items-center">
-                                <div class="p-3 rounded-full bg-red-100 text-red-600 mr-4">Segar C</div>
-                                <div>
-                                    <p class="text-gray-500 text-sm">Stok segar grade C</p>
-                                    <p class="text-xl font-bold text-gray-700">{{ $stokSegarC ?? 0 }} kg</p>
-                                </div>
-                            </div>
-                            <div class="flex items-center">
-                                <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">Beku A</div>
+                                <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">Grade A</div>
                                 <div>
                                     <p class="text-gray-500 text-sm">Stok beku grade A</p>
                                     <p class="text-xl font-bold text-gray-700">{{ $stokBekuA ?? 0 }} kg</p>
                                 </div>
                             </div>
                             <div class="flex items-center">
-                                <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">Beku B</div>
+                                <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">Grade B</div>
                                 <div>
                                     <p class="text-gray-500 text-sm">Stok beku grade B</p>
                                     <p class="text-xl font-bold text-gray-700">{{ $stokBekuB ?? 0 }} kg</p>
                                 </div>
                             </div>
                             <div class="flex items-center">
-                                <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">Beku C</div>
+                                <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">Grade C</div>
                                 <div>
                                     <p class="text-gray-500 text-sm">Stok beku grade C</p>
                                     <p class="text-xl font-bold text-gray-700">{{ $stokBekuC ?? 0 }} kg</p>
@@ -368,18 +365,24 @@
                                                             d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                                     </svg>
                                                 </a>
-                                                @unless($strawberi->is_posted)
-                                                    <form action="{{ route('strawberi.destroy', $strawberi) }}" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data ini?');">
+                                                @unless ($strawberi->is_posted)
+                                                    <form action="{{ route('strawberi.destroy', $strawberi) }}"
+                                                        method="POST" class="inline"
+                                                        onsubmit="return confirm('Apakah Anda yakin ingin menghapus data ini?');">
                                                         @csrf
                                                         @method('DELETE')
                                                         <button type="submit" class="text-red-600 hover:text-red-900">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+                                                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                                    stroke-width="2"
+                                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                             </svg>
                                                         </button>
                                                     </form>
                                                 @else
-                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-600">Posted</span>
+                                                    <span
+                                                        class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-600">Posted</span>
                                                 @endunless
                                             </div>
                                         </td>
