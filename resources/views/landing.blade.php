@@ -8,7 +8,20 @@
     <title>{{ config('app.name', 'Strawberi') }} — Kelola Pembukuan & Stok</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @php
+        $isProduction = app()->environment('production');
+        $manifestPath = $isProduction
+            ? base_path('../public_html/build/manifest.json')
+            : public_path('build/manifest.json');
+    @endphp
+
+    @if ($isProduction && file_exists($manifestPath))
+        @php $manifest = json_decode(file_get_contents($manifestPath), true); @endphp
+        <link rel="stylesheet" href="{{ config('app.url') }}/build/{{ $manifest['resources/css/app.css']['file'] }}">
+        <script type="module" src="{{ config('app.url') }}/build/{{ $manifest['resources/js/app.js']['file'] }}"></script>
+    @else
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @endif
 </head>
 
 <body x-data="{ darkMode: false }" x-init="(() => { const d = localStorage.getItem('theme') === 'dark'; if (d) document.documentElement.classList.add('dark');

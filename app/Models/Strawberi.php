@@ -53,13 +53,13 @@ class Strawberi extends Model
         parent::boot();
 
         static::creating(function ($strawberi) {
-            if (empty($strawberi->stok_awal)) {
+            if (is_null($strawberi->stok_awal)) {
                 $strawberi->stok_awal = $strawberi->jumlah;
             }
-            if (empty($strawberi->stok_terjual)) {
+            if (is_null($strawberi->stok_terjual)) {
                 $strawberi->stok_terjual = 0;
             }
-            if (empty($strawberi->stok_terkunci)) {
+            if (is_null($strawberi->stok_terkunci)) {
                 $strawberi->stok_terkunci = 0;
             }
             if (empty($strawberi->batch_number)) {
@@ -95,10 +95,6 @@ class Strawberi extends Model
         return $this->stok_awal - $this->stok_terjual - $this->stok_rusak + $this->stok_adjustment - $this->stok_terkunci;
     }
 
-    public function getStokTersediaAttribute()
-    {
-        return $this->stok_awal - $this->stok_terjual - $this->stok_rusak + $this->stok_adjustment;
-    }
 
     public function getTotalNilaiBeliAttribute()
     {

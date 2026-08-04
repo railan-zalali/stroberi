@@ -357,12 +357,24 @@ class LaporanController extends Controller
             ->get();
 
         $pengeluaranKategori = Transaksi::where('jenis', 'pengeluaran')
-            ->where(function ($query) {
-                $query->where('is_pinjaman', false)
-                    ->orWhere(function ($q) {
-                        $q->where('is_pinjaman', true)
-                            ->where('tipe_transaksi', 'pinjaman'); // Include loan disbursements
+            ->where(function ($query) use ($tipeTransaksi) {
+                if ($tipeTransaksi === 'biasa') {
+                    $query->where('is_pinjaman', false);
+                } elseif ($tipeTransaksi === 'pinjaman') {
+                    $query->where('is_pinjaman', true)
+                        ->where('tipe_transaksi', 'pinjaman');
+                } elseif ($tipeTransaksi === 'pengembalian') {
+                    $query->where('is_pinjaman', true)
+                        ->where('tipe_transaksi', 'pengembalian');
+                } else {
+                    $query->where(function ($q) {
+                        $q->where('is_pinjaman', false)
+                            ->orWhere(function ($subQ) {
+                                $subQ->where('is_pinjaman', true)
+                                    ->whereIn('tipe_transaksi', ['pinjaman', 'pengembalian']);
+                            });
                     });
+                }
             })
             ->where('kategori', '!=', 'Pembelian Strawberi (Pending)')
             ->whereBetween('tanggal', [$startDate, $endDate])
@@ -540,19 +552,14 @@ class LaporanController extends Controller
 
     public function supplier()
     {
-        // Get all suppliers with purchase totals (bukan stok berjalan)
+        // Load all suppliers with strawberis once
         $allSuppliers = Supplier::with(['strawberis'])
             ->get()
             ->map(function ($supplier) {
-                // Total pembelian (kg) dan nilai (harga beli * jumlah)
                 $supplier->total_kg = $supplier->strawberis->sum('jumlah');
                 $supplier->total_nilai = $supplier->strawberis->sum(function ($strawberi) {
                     return $strawberi->jumlah * $strawberi->harga_beli;
                 });
-                // Posisi pinjaman/pengembalian
-                $supplier->total_pinjaman = $supplier->total_pinjaman; // accessor
-                $supplier->total_pengembalian = $supplier->total_pengembalian; // accessor
-                $supplier->sisa_pinjaman = $supplier->sisa_pinjaman; // accessor
                 return $supplier;
             });
 
@@ -567,35 +574,12 @@ class LaporanController extends Controller
             ['path' => request()->url(), 'query' => request()->query()]
         );
 
-        // Top suppliers by purchased volume (total jumlah)
-        $topSuppliersByVolume = Supplier::with(['strawberis'])
-            ->get()
-            ->map(function ($supplier) {
-                $supplier->total_kg = $supplier->strawberis->sum('jumlah');
-                return $supplier;
-            })
-            ->sortByDesc('total_kg')
-            ->take(5);
+        // Top suppliers reuse the already-loaded collection
+        $topSuppliersByVolume = $allSuppliers->sortByDesc('total_kg')->take(5);
+        $topSuppliersByValue = $allSuppliers->sortByDesc('total_nilai')->take(5);
 
-        // Top suppliers by purchase value
-        $topSuppliersByValue = Supplier::with(['strawberis'])
-            ->get()
-            ->map(function ($supplier) {
-                $supplier->total_nilai = $supplier->strawberis->sum(function ($strawberi) {
-                    return $strawberi->jumlah * $strawberi->harga_beli;
-                });
-                return $supplier;
-            })
-            ->sortByDesc('total_nilai')
-            ->take(5);
-
-        // Suppliers with outstanding debt (gunakan accessor dari transaksi)
-        $suppliersWithDebt = Supplier::with([])
-            ->get()
-            ->map(function ($supplier) {
-                $supplier->sisa_pinjaman = $supplier->sisa_pinjaman;
-                return $supplier;
-            })
+        // Suppliers with outstanding debt
+        $suppliersWithDebt = $allSuppliers
             ->filter(function ($supplier) {
                 return $supplier->sisa_pinjaman > 0;
             })
@@ -687,23 +671,6 @@ class LaporanController extends Controller
     private function formatStokData($monthlyStokData)
     {
         $result = [];
-
-        // Get monthly stok data for chart
-        $monthlyStokData = Strawberi::selectRaw("
-            YEAR(tanggal_masuk) as tahun,
-            MONTH(tanggal_masuk) as bulan,
-            jenis,
-            SUM(stok_awal - stok_terjual - COALESCE(stok_rusak, 0) + COALESCE(stok_adjustment, 0)) as total
-        ")
-            ->where('is_posted', true)
-            ->whereYear('tanggal_masuk', '>=', now()->subYear()->year)
-            ->groupBy('tahun', 'bulan', 'jenis')
-            ->orderBy('tahun')
-            ->orderBy('bulan')
-            ->get()
-            ->groupBy(function ($item) {
-                return Carbon::createFromDate($item->tahun, $item->bulan, 1)->format('Y-m');
-            });
 
         foreach ($monthlyStokData as $month => $data) {
             $segar = $data->where('jenis', 'segar')->sum('total');

@@ -51,9 +51,10 @@ class StrawberiController extends Controller
                 $q->where('keterangan', 'like', "%{$search}%")
                     ->orWhere('batch_number', 'like', "%{$search}%")
                     ->orWhere('jenis', 'like', "%{$search}%")
-                    ->orWhere('grade', 'like', "%{$search}%");
-            })->orWhereHas('supplier', function ($qs) use ($search) {
-                $qs->where('nama', 'like', "%{$search}%");
+                    ->orWhere('grade', 'like', "%{$search}%")
+                    ->orWhereHas('supplier', function ($qs) use ($search) {
+                        $qs->where('nama', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -264,11 +265,6 @@ class StrawberiController extends Controller
 
     public function adjust(Request $request, Strawberi $strawberi)
     {
-        if ($strawberi->is_posted) {
-            return redirect()->back()
-                ->with('error', 'Stok ini sudah diposting/dituntaskan dan tidak dapat disesuaikan lagi')
-                ->withInput();
-        }
         $request->validate([
             'adjust_quantity' => 'required|numeric|not_in:0',
             'adjust_notes' => 'nullable|string'
@@ -351,14 +347,6 @@ class StrawberiController extends Controller
         $stokSegarTotal = $stokSegarA + $stokSegarB + $stokSegarC;
         $stokBekuTotal = $stokBekuA + $stokBekuB + $stokBekuC;
 
-        // Hitung stok yang sedang terkunci
-        $stokTerkunciSegarA = $this->hitungStokTerkunci('segar', 'a');
-        $stokTerkunciSegarB = $this->hitungStokTerkunci('segar', 'b');
-        $stokTerkunciSegarC = $this->hitungStokTerkunci('segar', 'c');
-        $stokTerkunciBekuA = $this->hitungStokTerkunci('beku', 'a');
-        $stokTerkunciBekuB = $this->hitungStokTerkunci('beku', 'b');
-        $stokTerkunciBekuC = $this->hitungStokTerkunci('beku', 'c');
-
         return view('strawberi.sell-global', compact(
             'stokSegarA',
             'stokSegarB',
@@ -367,13 +355,7 @@ class StrawberiController extends Controller
             'stokBekuB',
             'stokBekuC',
             'stokSegarTotal',
-            'stokBekuTotal',
-            'stokTerkunciSegarA',
-            'stokTerkunciSegarB',
-            'stokTerkunciSegarC',
-            'stokTerkunciBekuA',
-            'stokTerkunciBekuB',
-            'stokTerkunciBekuC'
+            'stokBekuTotal'
         ));
     }
 
@@ -436,7 +418,7 @@ class StrawberiController extends Controller
                 ->where('is_posted', true)
                 ->where('tanggal_kadaluarsa', '>=', now())
                 ->when($request->preferensi_grade && $request->preferensi_grade !== 'campur', function ($q) use ($request) {
-                    $q->where('grade', strtoupper($request->preferensi_grade));
+                    $q->where('grade', $request->preferensi_grade);
                 })
                 ->orderBy('tanggal_kadaluarsa', 'asc')
                 ->orderBy('tanggal_masuk', 'asc')
@@ -624,9 +606,6 @@ class StrawberiController extends Controller
      */
     private function hitungStokBerdasarkanJenisGrade($jenis, $grade)
     {
-        // Convert grade to uppercase to match database storage
-        $grade = strtoupper($grade);
-
         return Strawberi::where('jenis', $jenis)
             ->where('grade', $grade)
             ->where('is_posted', true)
@@ -635,33 +614,5 @@ class StrawberiController extends Controller
             ->sum(function ($strawberi) {
                 return $strawberi->stok_tersisa;
             });
-    }
-
-    private function hitungStokTerkunci($jenis, $grade)
-    {
-        // Locked dalam konteks ini hanya untuk stok yang sudah habis dan pembelian dibayar
-        $grade = strtoupper($grade);
-
-        $strawberis = Strawberi::where('jenis', $jenis)
-            ->where('grade', $grade)
-            ->where('is_posted', true)
-            ->get();
-
-        $lockedTotal = 0;
-        foreach ($strawberis as $s) {
-            if ($s->stok_tersisa <= 0) {
-                $hasPaidPurchase = Transaksi::where('jenis', 'pengeluaran')
-                    ->where('kategori', 'Pembelian Strawberi')
-                    ->where('is_paid', true)
-                    ->where('keterangan', 'like', "%Batch: {$s->batch_number}%")
-                    ->exists();
-                if ($hasPaidPurchase) {
-                    // Tampilkan sebagai terkunci dengan nilai 0 (habis). Agar tidak membingungkan, tidak menambah jumlah.
-                    // Jika ingin menampilkan jumlah terkunci historis, bisa gunakan stok_awal.
-                    $lockedTotal += 0;
-                }
-            }
-        }
-        return $lockedTotal;
     }
 }

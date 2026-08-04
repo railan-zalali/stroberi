@@ -73,7 +73,7 @@ class TransaksiController extends Controller
     {
         $request->validate([
             'jenis' => 'required|in:pemasukan,pengeluaran',
-            'jumlah' => 'required|numeric|min:0',
+            'jumlah' => 'required|numeric|gt:0',
             'tanggal' => 'required|date',
             'kategori' => 'nullable|string',
             'keterangan' => 'nullable|string',
@@ -118,8 +118,8 @@ class TransaksiController extends Controller
             'action' => 'create_transaction',
             'table_name' => 'transaksis',
             'record_id' => $transaksi->id,
-            'old_values' => json_encode([]),
-            'new_values' => json_encode([
+            'old_values' => [],
+            'new_values' => [
                 'jenis' => $transaksi->jenis,
                 'jumlah' => $transaksi->jumlah,
                 'tanggal' => $transaksi->tanggal->format('Y-m-d'),
@@ -127,7 +127,7 @@ class TransaksiController extends Controller
                 'keterangan' => $transaksi->keterangan,
                 'tipe_transaksi' => $transaksi->tipe_transaksi,
                 'is_pinjaman' => $transaksi->is_pinjaman,
-            ]),
+            ],
             'description' => "Transaksi baru ID {$transaksi->id} dibuat oleh " . auth()->user()->name,
         ]);
 
@@ -175,7 +175,7 @@ class TransaksiController extends Controller
         }
         $request->validate([
             'jenis' => 'required|in:pemasukan,pengeluaran',
-            'jumlah' => 'required|numeric|min:0',
+            'jumlah' => 'required|numeric|gt:0',
             'tanggal' => 'required|date',
             'kategori' => 'nullable|string',
             'keterangan' => 'nullable|string',
@@ -256,8 +256,8 @@ class TransaksiController extends Controller
                 'action' => 'update_transaction',
                 'table_name' => 'transaksis',
                 'record_id' => $transaksi->id,
-                'old_values' => json_encode($oldData),
-                'new_values' => json_encode($newData),
+                'old_values' => $oldData,
+                'new_values' => $newData,
                 'description' => "Transaksi ID {$transaksi->id} diperbarui oleh " . auth()->user()->name . '. Perubahan: ' . implode(', ', array_keys($changes)),
             ]);
         }
@@ -295,13 +295,18 @@ class TransaksiController extends Controller
 
     public function destroy(Transaksi $transaksi)
     {
+        // Hapus file bukti pembayaran jika ada
+        if ($transaksi->bukti_pembayaran && Storage::disk('public')->exists($transaksi->bukti_pembayaran)) {
+            Storage::disk('public')->delete($transaksi->bukti_pembayaran);
+        }
+
         // Buat log audit sebelum menghapus
         \App\Models\AuditLog::create([
             'user_id' => auth()->id(),
             'action' => 'delete_transaction',
             'table_name' => 'transaksis',
             'record_id' => $transaksi->id,
-            'old_values' => json_encode([
+            'old_values' => [
                 'jenis' => $transaksi->jenis,
                 'jumlah' => $transaksi->jumlah,
                 'tanggal' => $transaksi->tanggal->format('Y-m-d'),
@@ -309,8 +314,8 @@ class TransaksiController extends Controller
                 'keterangan' => $transaksi->keterangan,
                 'tipe_transaksi' => $transaksi->tipe_transaksi,
                 'is_pinjaman' => $transaksi->is_pinjaman,
-            ]),
-            'new_values' => json_encode([]),
+            ],
+            'new_values' => [],
             'description' => "Transaksi ID {$transaksi->id} dihapus oleh " . auth()->user()->name,
         ]);
 
@@ -384,127 +389,13 @@ class TransaksiController extends Controller
     }
 
     /**
-     * Complete stock transaction after payment confirmation
-     * This method finalizes stock movements by converting locked stock to sold stock
+     * Complete stock transaction — legacy method kept for route compatibility.
+     * Stock is now finalized directly during sale, no session-based locking.
      */
     public function completeStockTransaction(Transaksi $transaksi)
     {
-        // Check if this is a stock sale transaction
-        if ($transaksi->jenis !== 'pemasukan' || $transaksi->tipe_transaksi !== 'penjualan') {
-            return redirect()->back()
-                ->with('error', 'Transaksi ini bukan transaksi penjualan stok');
-        }
-
-        // Check if stock transaction is already completed
-        $sessionKey = 'stock_sale_' . $transaksi->id;
-        if (!session()->has($sessionKey)) {
-            return redirect()->back()
-                ->with('info', 'Transaksi stok sudah diselesaikan atau tidak memerlukan penyelesaian stok');
-        }
-
-        $stockData = session($sessionKey);
-
-        DB::beginTransaction();
-        try {
-            // Handle individual batch sale (from sell method)
-            if (isset($stockData['strawberi_id'])) {
-                $strawberi = Strawberi::find($stockData['strawberi_id']);
-                if ($strawberi && $strawberi->is_locked) {
-                    // Convert locked stock to sold stock
-                    $strawberi->stok_terjual += $stockData['jumlah'];
-                    $strawberi->stok_terkunci -= $stockData['jumlah'];
-                    if ($strawberi->stok_terkunci <= 0) {
-                        $strawberi->stok_terkunci = 0;
-                        $strawberi->is_locked = false;
-                    }
-                    $strawberi->save();
-                }
-            }
-            // Handle global sale (from sellGlobalStore method)
-            elseif (isset($stockData['allocations'])) {
-                foreach ($stockData['allocations'] as $allocation) {
-                    $strawberi = Strawberi::find($allocation['strawberi_id']);
-                    if ($strawberi && $strawberi->is_locked) {
-                        // Convert locked stock to sold stock
-                        $strawberi->stok_terjual += $allocation['jumlah'];
-                        $strawberi->stok_terkunci -= $allocation['jumlah'];
-                        if ($strawberi->stok_terkunci <= 0) {
-                            $strawberi->stok_terkunci = 0;
-                            $strawberi->is_locked = false;
-                        }
-                        $strawberi->save();
-                    }
-                }
-            }
-
-            // Tandai transaksi sebagai dibayar (konfirmasi selesai)
-            $transaksi->is_paid = true;
-            $transaksi->save();
-
-            // Remove session data
-            session()->forget($sessionKey);
-
-            DB::commit();
-
-            return redirect()->back()
-                ->with('success', 'Transaksi stok berhasil diselesaikan');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return redirect()->back()
-                ->with('error', 'Gagal menyelesaikan transaksi stok: ' . $e->getMessage());
-        }
-    }
-
-    public function finalizeStock(Strawberi $strawberi)
-    {
-        // Check if there are pending stock allocations for this strawberry
-        $sessionKey = 'pending_stock_allocations';
-        if (!session()->has($sessionKey) || !isset(session($sessionKey)[$strawberi->id])) {
-            return redirect()->back()
-                ->with('error', 'Tidak ada alokasi stok yang tertunda untuk stok ini');
-        }
-
-        $allocatedAmount = session($sessionKey)[$strawberi->id];
-
-        DB::beginTransaction();
-        try {
-            // Validate that the allocated amount doesn't exceed available stock
-            $availableStock = $strawberi->stok_awal - $strawberi->stok_terjual - $strawberi->stok_rusak - $strawberi->stok_terkunci;
-
-            if ($allocatedAmount > $availableStock) {
-                DB::rollBack();
-                return redirect()->back()
-                    ->with('error', 'Jumlah alokasi melebihi stok yang tersedia');
-            }
-
-            // Convert locked stock to sold stock
-            $strawberi->stok_terjual += $allocatedAmount;
-            $strawberi->stok_terkunci = max(0, $strawberi->stok_terkunci - $allocatedAmount);
-
-            // If no more locked stock, unlock the batch
-            if ($strawberi->stok_terkunci <= 0) {
-                $strawberi->stok_terkunci = 0;
-                $strawberi->is_locked = false;
-            }
-
-            // Mark as posted since it's now finalized
-            $strawberi->is_posted = true;
-            $strawberi->save();
-
-            // Remove this allocation from session
-            $allocations = session($sessionKey);
-            unset($allocations[$strawberi->id]);
-            session([$sessionKey => $allocations]);
-
-            DB::commit();
-
-            return redirect()->back()
-                ->with('success', 'Stok berhasil diselesaikan');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return redirect()->back()
-                ->with('error', 'Gagal menyelesaikan stok: ' . $e->getMessage());
-        }
+        return redirect()->back()
+            ->with('info', 'Transaksi stok sudah diselesaikan secara otomatis saat penjualan.');
     }
 
     public function markAsCompleted(Transaksi $transaksi)
@@ -523,9 +414,6 @@ class TransaksiController extends Controller
 
         DB::beginTransaction();
         try {
-            // Simpan status sebelumnya untuk log
-            $oldStatus = $transaksi->is_completed ? 'Selesai' : 'Belum Selesai';
-
             $transaksi->is_completed = true;
             $transaksi->completed_at = now();
             $transaksi->completed_by = auth()->id();
@@ -537,8 +425,8 @@ class TransaksiController extends Controller
                 'action' => 'complete_transaction',
                 'table_name' => 'transaksis',
                 'record_id' => $transaksi->id,
-                'old_values' => json_encode(['is_completed' => false, 'status' => 'Belum Selesai']),
-                'new_values' => json_encode(['is_completed' => true, 'status' => 'Selesai']),
+                'old_values' => ['is_completed' => false, 'status' => 'Belum Selesai'],
+                'new_values' => ['is_completed' => true, 'status' => 'Selesai'],
                 'description' => "Transaksi penjualan ID {$transaksi->id} ditandai sebagai selesai oleh " . auth()->user()->name,
             ]);
 

@@ -12,10 +12,6 @@ Route::get('/', function () {
     return view('landing');
 });
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
-
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -54,14 +50,10 @@ Route::middleware(['auth'])->group(function () {
     // Export routes (only Excel and PDF) — place BEFORE resource to avoid wildcard collision
     Route::get('/transaksi/export', [TransaksiController::class, 'export'])->name('transaksi.export');
     Route::get('/transaksi/export/pdf', [TransaksiController::class, 'exportPdf'])->name('transaksi.export.pdf');
-    Route::get('/transaksi/export/month/{year}/{month}', [TransaksiController::class, 'exportMonth'])->name('transaksi.export.month');
-    Route::get('/transaksi/export/year/{year}', [TransaksiController::class, 'exportYear'])->name('transaksi.export.year');
 
     // Complete stock transaction after payment confirmation
     Route::post('/transaksi/{transaksi}/complete-stock', [TransaksiController::class, 'completeStockTransaction'])->name('transaksi.complete-stock');
 
-    // Finalize stock (for pending stock allocations)
-    Route::post('/transaksi/finalize-stock/{strawberi}', [TransaksiController::class, 'finalizeStock'])->name('transaksi.finalize-stock');
 
     // Mark transaction as completed
     Route::post('/transaksi/{transaksi}/mark-as-completed', [TransaksiController::class, 'markAsCompleted'])->name('transaksi.mark-as-completed');

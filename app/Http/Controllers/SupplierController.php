@@ -291,7 +291,7 @@ class SupplierController extends Controller
     public function updatePengembalian(Request $request, Supplier $supplier)
     {
         $request->validate([
-            'jumlah_pengembalian' => 'required|numeric|min:0',
+            'jumlah_pengembalian' => 'required|numeric|gt:0',
             'tanggal_pengembalian' => 'required|date',
             'keterangan_pengembalian' => 'nullable|string',
             'metode_pengembalian' => 'required|in:tunai,transfer',
@@ -360,7 +360,7 @@ class SupplierController extends Controller
     public function createPinjaman(Request $request, Supplier $supplier)
     {
         $request->validate([
-            'jumlah_pinjaman' => 'required|numeric|min:0',
+            'jumlah_pinjaman' => 'required|numeric|gt:0',
             'tanggal_pinjaman' => 'required|date',
             'keterangan_pinjaman' => 'nullable|string',
         ]);
@@ -389,63 +389,6 @@ class SupplierController extends Controller
             return redirect()->back()
                 ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
                 ->withInput();
-        }
-    }
-    // Metode untuk menambahkan pinjaman otomatis dari perusahaan ke supplier
-    public function updatePinjamanOtomatis(Supplier $supplier, $jumlah)
-    {
-        // Buat transaksi pinjaman
-        Transaksi::create([
-            'jenis' => 'pengeluaran', // Pengeluaran karena uang keluar dari perusahaan ke supplier
-            'jumlah' => $jumlah,
-            'tanggal' => now(),
-            'kategori' => 'Pinjaman Supplier',
-            'keterangan' => "Penambahan pinjaman otomatis untuk supplier {$supplier->nama}",
-            'user_id' => auth()->id(),
-            'supplier_id' => $supplier->id,
-            'tipe_transaksi' => 'pinjaman',
-            'is_pinjaman' => true,
-        ]);
-    }
-
-    /**
-     * Bebaskan stok yang terkunci untuk supplier ini
-     * Karena pembayaran sudah dilakukan, semua stok yang terkunci harus dilepas
-     */
-    private function unlockSupplierStock(Supplier $supplier)
-    {
-        // Cari semua stok strawberi dari supplier ini yang sedang terkunci
-        $lockedStocks = Strawberi::where('supplier_id', $supplier->id)
-            ->where('is_locked', true)
-            ->where('stok_terkunci', '>', 0)
-            ->get();
-
-        foreach ($lockedStocks as $stock) {
-            // Kembalikan stok terkunci ke stok tersedia
-            $stock->stok_terkunci = 0;
-            $stock->is_locked = false;
-            $stock->save();
-        }
-
-        // Hapus session untuk transaksi yang sedang pending untuk supplier ini
-        // Ini akan memungkinkan transaksi penjualan yang tertunda untuk diselesaikan
-        $pendingTransactions = Transaksi::where('supplier_name', $supplier->nama)
-            ->where('jenis', 'pemasukan')
-            ->where('kategori', 'like', '%Penjualan%')
-            ->whereNull('is_paid') // Transaksi penjualan yang belum selesai
-            ->get();
-
-        foreach ($pendingTransactions as $transaction) {
-            // Hapus session data untuk transaksi ini
-            $sessionKey1 = 'stock_allocation_' . $transaction->id;
-            $sessionKey2 = 'stock_sale_' . $transaction->id;
-
-            if (session()->has($sessionKey1)) {
-                session()->forget($sessionKey1);
-            }
-            if (session()->has($sessionKey2)) {
-                session()->forget($sessionKey2);
-            }
         }
     }
 }

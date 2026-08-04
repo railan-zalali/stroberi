@@ -27,7 +27,7 @@ class LaporanStokExport implements FromCollection, WithHeadings, WithMapping, Sh
     public function styles(Worksheet $sheet)
     {
         // Style untuk header
-        $sheet->getStyle('A1:R1')->applyFromArray([
+        $sheet->getStyle('A1:Q1')->applyFromArray([
             'font' => [
                 'bold' => true,
                 'color' => ['rgb' => 'FFFFFF'],
@@ -104,7 +104,6 @@ class LaporanStokExport implements FromCollection, WithHeadings, WithMapping, Sh
             'Penyesuaian (kg)',
             'Stok Tersisa (kg)',
             'Harga Beli',
-            'Harga Jual',
             'Tanggal Masuk',
             'Tanggal Kadaluarsa',
             'Sisa Hari',
@@ -132,7 +131,6 @@ class LaporanStokExport implements FromCollection, WithHeadings, WithMapping, Sh
             number_format($strawberi->stok_adjustment, 2),
             number_format($strawberi->stok_tersisa, 2),
             'Rp ' . number_format($strawberi->harga_beli, 0, ',', '.'),
-            'Rp ' . number_format($strawberi->harga_jual, 0, ',', '.'),
             $strawberi->tanggal_masuk->format('d/m/Y'),
             $strawberi->tanggal_kadaluarsa->format('d/m/Y'),
             $sisaHariText,

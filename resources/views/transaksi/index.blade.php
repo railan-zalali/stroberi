@@ -20,10 +20,10 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <!-- Summary Cards -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6 border-b border-gray-200">
+                <div class="bg-white dark:bg-gray-900 overflow-hidden shadow-sm sm:rounded-lg border border-gray-100 dark:border-gray-800">
+                    <div class="p-6 border-b border-gray-200 dark:border-gray-800">
                         <div class="flex items-center">
-                            <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">
+                            <div class="p-3 rounded-full bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400 mr-4">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
                                     viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -31,18 +31,18 @@
                                 </svg>
                             </div>
                             <div>
-                                <p class="text-gray-500 text-sm">Total Pemasukan (Bulan Ini)</p>
-                                <p class="text-2xl font-bold text-gray-700">Rp
+                                <p class="text-gray-500 dark:text-gray-400 text-sm">Total Pemasukan (Bulan Ini)</p>
+                                <p class="text-2xl font-bold text-gray-700 dark:text-gray-100">Rp
                                     {{ number_format($totalPemasukan ?? 0, 0, ',', '.') }}</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6 border-b border-gray-200">
+                <div class="bg-white dark:bg-gray-900 overflow-hidden shadow-sm sm:rounded-lg border border-gray-100 dark:border-gray-800">
+                    <div class="p-6 border-b border-gray-200 dark:border-gray-800">
                         <div class="flex items-center">
-                            <div class="p-3 rounded-full bg-red-100 text-red-600 mr-4">
+                            <div class="p-3 rounded-full bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 mr-4">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
                                     viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -50,18 +50,18 @@
                                 </svg>
                             </div>
                             <div>
-                                <p class="text-gray-500 text-sm">Total Pengeluaran (Bulan Ini)</p>
-                                <p class="text-2xl font-bold text-gray-700">Rp
+                                <p class="text-gray-500 dark:text-gray-400 text-sm">Total Pengeluaran (Bulan Ini)</p>
+                                <p class="text-2xl font-bold text-gray-700 dark:text-gray-100">Rp
                                     {{ number_format($totalPengeluaran ?? 0, 0, ',', '.') }}</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6 border-b border-gray-200">
+                <div class="bg-white dark:bg-gray-900 overflow-hidden shadow-sm sm:rounded-lg border border-gray-100 dark:border-gray-800">
+                    <div class="p-6 border-b border-gray-200 dark:border-gray-800">
                         <div class="flex items-center">
-                            <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
+                            <div class="p-3 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 mr-4">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
                                     viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -69,9 +69,9 @@
                                 </svg>
                             </div>
                             <div>
-                                <p class="text-gray-500 text-sm">Laba Bersih (Bulan Ini)</p>
+                                <p class="text-gray-500 dark:text-gray-400 text-sm">Laba Bersih (Bulan Ini)</p>
                                 <p
-                                    class="text-2xl font-bold {{ ($totalPemasukan ?? 0) - ($totalPengeluaran ?? 0) >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                                    class="text-2xl font-bold {{ ($totalPemasukan ?? 0) - ($totalPengeluaran ?? 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
                                     Rp
                                     {{ number_format(($totalPemasukan ?? 0) - ($totalPengeluaran ?? 0), 0, ',', '.') }}
                                 </p>

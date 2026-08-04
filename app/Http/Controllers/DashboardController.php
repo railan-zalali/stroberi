@@ -49,7 +49,7 @@ class DashboardController extends Controller
         // Expiring stock - get items expiring within 7 days
         $expiringStrawberi = Strawberi::where('tanggal_kadaluarsa', '<=', Carbon::now()->addDays(7))
             ->where('tanggal_kadaluarsa', '>=', Carbon::now())
-            ->whereRaw('(stok_awal - stok_terjual) > 0') // Hanya yang masih ada stok
+            ->whereRaw('(stok_awal - stok_terjual - COALESCE(stok_rusak, 0) + COALESCE(stok_adjustment, 0)) > 0')
             ->orderBy('tanggal_kadaluarsa')
             ->get()
             ->map(function ($strawberi) {
