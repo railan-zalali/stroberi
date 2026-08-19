@@ -56,6 +56,94 @@
                 </div>
             </div>
 
+            <!-- Rincian Kerugian Stok -->
+            @if(isset($kerugianStok) && ($kerugianStok['total_nilai'] > 0 || count($kerugianStok['detail']) > 0))
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6 border-l-4 border-orange-500">
+                <div class="p-6 border-b border-gray-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-medium text-orange-700 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                            </svg>
+                            Rincian Kerugian Stok Bulan Ini
+                        </h3>
+                        <span class="text-xs text-gray-500">Batch masuk pada periode ini yang rusak / kadaluarsa</span>
+                    </div>
+
+                    <!-- Summary boxes kerugian -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                        <div class="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                            <p class="text-xs font-medium text-orange-700 uppercase tracking-wide mb-1">Total Stok Hilang</p>
+                            <p class="text-2xl font-bold text-orange-600">{{ number_format($kerugianStok['total_rusak_kg'], 2, ',', '.') }} <span class="text-base font-normal">kg</span></p>
+                            <p class="text-xs text-orange-500 mt-1">Rusak + Kadaluarsa</p>
+                        </div>
+                        <div class="bg-red-50 p-4 rounded-lg border border-red-200">
+                            <p class="text-xs font-medium text-red-700 uppercase tracking-wide mb-1">Estimasi Nilai Kerugian</p>
+                            <p class="text-2xl font-bold text-red-600">Rp {{ number_format($kerugianStok['total_nilai'], 0, ',', '.') }}</p>
+                            <p class="text-xs text-red-500 mt-1">Berdasarkan harga beli per batch</p>
+                        </div>
+                    </div>
+
+                    <!-- Detail tabel kerugian -->
+                    @if(count($kerugianStok['detail']) > 0)
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead class="bg-orange-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-orange-700 uppercase tracking-wider">Batch</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-orange-700 uppercase tracking-wider">Jenis</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-orange-700 uppercase tracking-wider">Tgl Masuk</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-orange-700 uppercase tracking-wider">Tgl Kadaluarsa</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-orange-700 uppercase tracking-wider">Penyebab</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-orange-700 uppercase tracking-wider">Rusak (kg)</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-orange-700 uppercase tracking-wider">Kadaluarsa (kg)</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-orange-700 uppercase tracking-wider">Harga Beli/kg</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-orange-700 uppercase tracking-wider">Estimasi Rugi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-100">
+                                @foreach($kerugianStok['detail'] as $item)
+                                <tr class="hover:bg-orange-50 transition-colors">
+                                    <td class="px-4 py-3 font-mono text-xs text-gray-600">{{ $item['batch'] }}</td>
+                                    <td class="px-4 py-3">
+                                        <span class="px-2 py-1 rounded-full text-xs font-medium {{ $item['jenis'] == 'segar' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700' }}">
+                                            {{ ucfirst($item['jenis']) }}
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3 text-gray-600">{{ $item['tgl_masuk'] }}</td>
+                                    <td class="px-4 py-3 text-red-600 font-medium">{{ $item['tgl_kadaluarsa'] }}</td>
+                                    <td class="px-4 py-3">
+                                        @if($item['stok_rusak'] > 0 && $item['stok_kadaluarsa'] > 0)
+                                            <span class="px-2 py-1 rounded-full text-xs bg-red-100 text-red-700">Rusak + Kadaluarsa</span>
+                                        @elseif($item['stok_rusak'] > 0)
+                                            <span class="px-2 py-1 rounded-full text-xs bg-orange-100 text-orange-700">Stok Rusak</span>
+                                        @else
+                                            <span class="px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-700">Kadaluarsa</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-3 text-right text-gray-700">{{ number_format($item['stok_rusak'], 2, ',', '.') }}</td>
+                                    <td class="px-4 py-3 text-right text-gray-700">{{ number_format($item['stok_kadaluarsa'], 2, ',', '.') }}</td>
+                                    <td class="px-4 py-3 text-right text-gray-600">Rp {{ number_format($item['harga_beli'], 0, ',', '.') }}</td>
+                                    <td class="px-4 py-3 text-right font-bold text-red-600">Rp {{ number_format($item['nilai_rugi'], 0, ',', '.') }}</td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                            <tfoot class="bg-orange-100">
+                                <tr>
+                                    <td colspan="5" class="px-4 py-3 text-right text-xs font-bold text-orange-800 uppercase">Total Kerugian</td>
+                                    <td class="px-4 py-3 text-right font-bold text-orange-800">{{ number_format($kerugianStok['total_rusak_kg'], 2, ',', '.') }} kg</td>
+                                    <td class="px-4 py-3"></td>
+                                    <td class="px-4 py-3"></td>
+                                    <td class="px-4 py-3 text-right font-bold text-red-700">Rp {{ number_format($kerugianStok['total_nilai'], 0, ',', '.') }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    @endif
+                </div>
+            </div>
+            @endif
+
             <!-- Filter Section -->
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
                 <div class="p-6 border-b border-gray-200">
